@@ -18,4 +18,11 @@ uv sync
 - `evals/` — брифы для проверок
 - `data/` — sqlite, индекс, артефакты (не в git)
 
-Команды CLI появятся на шаге S5.
+## CLI
+
+```bash
+uv run misterio skills ls
+uv run misterio run "про трактор" --skill chastushki --fake
+```
+
+Артефакт пишется в `data/artifacts/`. Без `--fake` используется OpenAI-compatible LLM из Settings (`MISTERIO_LLM_BASE_URL`, `MISTERIO_LLM_API_KEY`, `MISTERIO_LLM_MODEL`).

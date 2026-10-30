@@ -1,0 +1,42 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:11434:11434"   # только localhost, наружу не торчит
+    volumes:
+      - ollama:/root/.ollama      # модели хранятся в volume
+    environment:
+      OLLAMA_KEEP_ALIVE: "30m"        # не выгружать модель между вызовами
+      OLLAMA_NUM_PARALLEL: "1"        # меньше памяти под KV-кэш
+      OLLAMA_CONTEXT_LENGTH: "8192"   # иначе промпт может молча обрезаться
+      OLLAMA_FLASH_ATTENTION: "1"
+      OLLAMA_KV_CACHE_TYPE: "q8_0"    # кэш контекста вдвое меньше
+    mem_limit: 32g
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Одноразовый сервис: скачивает модель при первом запуске и завершается.
+  # Модель из MISTERIO_LLM_MODEL (по умолчанию qwen3:8b).
+  ollama-pull:
+    image: ollama/ollama:latest
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: "http://ollama:11434"
+    entrypoint: ["ollama", "pull", "${MISTERIO_LLM_MODEL:-qwen3:8b}"]
+    restart: "no"
+
+volumes:
+  ollama:
