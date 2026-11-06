@@ -15,6 +15,10 @@
     textarea, select, button { font: inherit; }
     textarea, select { padding: .75rem; border: 1px solid GrayText; border-radius: .5rem; background: Canvas; color: CanvasText; }
     button { justify-self: start; padding: .7rem 1.1rem; border: 0; border-radius: .5rem; background: #6d28d9; color: white; cursor: pointer; }
+    button:disabled { cursor: wait; opacity: .7; }
+    progress { width: 100%; height: .5rem; accent-color: #6d28d9; }
+    .generation-status { display: grid; gap: .5rem; color: GrayText; }
+    .generation-status[hidden] { display: none; }
     section { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid GrayText; }
     pre { white-space: pre-wrap; font: inherit; line-height: 1.6; }
     .error { color: #dc2626; }
@@ -25,7 +29,7 @@
     <h1>Misterio</h1>
     <p>Выберите навык и опишите задачу.</p>
 
-    <form method="post">
+    <form method="post" id="generation-form">
       <label>
         Навык
         <select name="skill" required>
@@ -38,7 +42,17 @@
         Задача
         <textarea name="brief" rows="5" required>{{ brief }}</textarea>
       </label>
-      <button type="submit">Создать</button>
+      <button type="submit" id="submit-button">Создать</button>
+      <div
+        class="generation-status"
+        id="generation-status"
+        role="status"
+        aria-live="polite"
+        hidden
+      >
+        <span>Генерируем результат — это может занять некоторое время…</span>
+        <progress aria-label="Генерация результата"></progress>
+      </div>
     </form>
 
     {% if error %}
@@ -55,5 +69,23 @@
     </section>
     {% endif %}
   </main>
+  <script>
+    const form = document.querySelector("#generation-form");
+    const submitButton = document.querySelector("#submit-button");
+    const generationStatus = document.querySelector("#generation-status");
+
+    form.addEventListener("submit", (event) => {
+      if (form.dataset.submitting === "true") {
+        event.preventDefault();
+        return;
+      }
+
+      form.dataset.submitting = "true";
+      form.setAttribute("aria-busy", "true");
+      submitButton.disabled = true;
+      submitButton.textContent = "Генерируем…";
+      generationStatus.hidden = false;
+    });
+  </script>
 </body>
 </html>

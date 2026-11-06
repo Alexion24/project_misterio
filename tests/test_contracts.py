@@ -32,6 +32,7 @@ def test_models_from_valid_dicts() -> None:
         }
     )
     assert manifest.needs_retrieval is False
+    assert manifest.temperature == 0.0
 
     chunk = DocumentChunk.model_validate(
         {

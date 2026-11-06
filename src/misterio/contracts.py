@@ -26,6 +26,7 @@ class SkillManifest(BaseModel):
     input_schema: dict[str, Any]
     output_schema: dict[str, Any]
     needs_retrieval: bool = False
+    temperature: float = Field(default=0.0, ge=0.0, le=2.0)
 
 
 class DocumentChunk(BaseModel):

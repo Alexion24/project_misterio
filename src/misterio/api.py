@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from uuid import uuid4
 
 from fastapi import FastAPI, Form, Request
@@ -14,7 +15,11 @@ templates = Jinja2Templates(directory=DEFAULT_SKILLS_DIR.parent / "templates")
 logger = logging.getLogger(__name__)
 
 
-def create_app(llm: Llm | None = None, model: str | None = None) -> FastAPI:
+def create_app(
+    llm: Llm | None = None,
+    model: str | None = None,
+    artifacts_dir: Path = Path("data/artifacts"),
+) -> FastAPI:
     app = FastAPI(title="Misterio")
 
     @app.get("/", response_class=HTMLResponse)
@@ -70,6 +75,8 @@ def create_app(llm: Llm | None = None, model: str | None = None) -> FastAPI:
                 error="Не удалось выполнить задачу.",
                 status_code=500,
             )
+        artifacts_dir.mkdir(parents=True, exist_ok=True)
+        (artifacts_dir / f"{job.id}.md").write_text(artifact.markdown, encoding="utf-8")
         return _page(
             request,
             brief=brief,

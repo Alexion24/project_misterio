@@ -33,5 +33,11 @@ def run(
 
     skill_md = (folder / "SKILL.md").read_text(encoding="utf-8")
     prompt = f"{skill_md}\n\n{job.brief}"
-    text = llm.complete(LlmCallSpec(model=model, prompt=prompt))
+    text = llm.complete(
+        LlmCallSpec(
+            model=model,
+            prompt=prompt,
+            temperature=manifest.temperature,
+        )
+    )
     return GenerationArtifact(markdown=text, sources=sources)

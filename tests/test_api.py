@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 
@@ -18,16 +19,21 @@ def test_form_lists_skills() -> None:
     assert response.status_code == 200
     assert "chastushki" in response.text
     assert "Задача" in response.text
+    assert 'id="generation-status"' in response.text
+    assert 'aria-label="Генерация результата"' in response.text
 
 
-def test_form_generates_and_displays_result() -> None:
-    client = TestClient(create_app(FakeLlm("готовая частушка")))
+def test_form_generates_displays_and_saves_result(tmp_path: Path) -> None:
+    client = TestClient(create_app(FakeLlm("готовая частушка"), artifacts_dir=tmp_path))
 
     response = client.post("/", data={"brief": "про трактор", "skill": "chastushki"})
 
     assert response.status_code == 200
     assert "готовая частушка" in response.text
     assert "про трактор" in response.text
+    artifacts = list(tmp_path.glob("*.md"))
+    assert len(artifacts) == 1
+    assert artifacts[0].read_text(encoding="utf-8") == "готовая частушка"
 
 
 def test_form_rejects_unknown_skill() -> None:
@@ -41,8 +47,9 @@ def test_form_rejects_unknown_skill() -> None:
 
 def test_form_hides_llm_error_details_and_logs_exception(
     caplog,
+    tmp_path: Path,
 ) -> None:
-    client = TestClient(create_app(FailingLlm()))
+    client = TestClient(create_app(FailingLlm(), artifacts_dir=tmp_path))
 
     with caplog.at_level(logging.ERROR, logger="misterio.api"):
         response = client.post(
@@ -54,3 +61,4 @@ def test_form_hides_llm_error_details_and_logs_exception(
     assert "secret-internal-url" not in response.text
     assert "LLM generation failed" in caplog.text
     assert "secret-internal-url" in caplog.text
+    assert list(tmp_path.glob("*.md")) == []
