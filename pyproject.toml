@@ -23,6 +23,7 @@ dev = [
     "pre-commit>=3.8",
     "pytest>=8",
     "pytest-httpx>=0.35",
+    "pytest-playwright>=0.10.0",
     "ruff>=0.17.3",
 ]
 

@@ -129,9 +129,12 @@
           body: new FormData(modelForm),
           headers: { "X-Misterio-Action": "switch-model" }
         });
-        document.open();
-        document.write(await response.text());
-        document.close();
+        const nextPage = new DOMParser().parseFromString(
+          await response.text(),
+          "text/html"
+        );
+        document.documentElement.replaceWith(nextPage.documentElement);
+        history.replaceState(null, "", "/");
       } catch (_error) {
         modelButton.disabled = false;
         modelButton.textContent = "Повторить";

@@ -3,7 +3,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from fastapi import FastAPI, Form, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
 from misterio.agent import run as run_job
@@ -40,10 +40,12 @@ def create_app(
     def switch_model(
         request: Request,
         selected_model: str = Form(alias="model"),
-    ) -> HTMLResponse:
+    ) -> Response:
+        enhanced_request = request.headers.get("x-misterio-action") == "switch-model"
         if (
             not _is_same_origin(request)
-            or request.headers.get("x-misterio-action") != "switch-model"
+            or not enhanced_request
+            and request.headers.get("sec-fetch-site") != "same-origin"
         ):
             return _page(
                 request,
@@ -68,6 +70,8 @@ def create_app(
                 error="Не удалось переключить модель. Проверьте Docker.",
                 status_code=503,
             )
+        if not enhanced_request:
+            return RedirectResponse(url="/", status_code=303)
         return _page(
             request,
             switcher=switcher,
@@ -160,7 +164,9 @@ def create_app(
 def _is_same_origin(request: Request) -> bool:
     origin = request.headers.get("origin")
     expected = str(request.base_url).rstrip("/")
-    return origin == expected
+    return origin == expected or (
+        origin is None and request.headers.get("sec-fetch-site") == "same-origin"
+    )
 
 
 def _resolve_llm(llm: Llm | None, model: str | None) -> tuple[Llm, str]:

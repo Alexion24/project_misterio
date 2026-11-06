@@ -103,6 +103,22 @@ def test_model_switch_requires_ui_header() -> None:
     assert switcher.calls == []
 
 
+def test_model_switch_native_form_redirects_to_root() -> None:
+    switcher = FakeModelSwitcher()
+    client = TestClient(create_app(FakeLlm(), model_switcher=switcher))
+
+    response = client.post(
+        "/model",
+        data={"model": "gigachat"},
+        headers={"Sec-Fetch-Site": "same-origin"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/"
+    assert switcher.calls == ["gigachat"]
+
+
 def test_form_generates_displays_and_saves_result(tmp_path: Path) -> None:
     client = TestClient(create_app(FakeLlm("готовая частушка"), artifacts_dir=tmp_path))
 
