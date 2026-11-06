@@ -70,7 +70,15 @@ def test_run_llm_error_exits_with_error(
     monkeypatch.setattr(cli, "run_job", boom)
     result = runner.invoke(
         app,
-        ["run", "x", "--skill", "chastushki", "--fake", "--artifacts-dir", str(tmp_path)],
+        [
+            "run",
+            "x",
+            "--skill",
+            "chastushki",
+            "--fake",
+            "--artifacts-dir",
+            str(tmp_path),
+        ],
     )
     assert result.exit_code == 1
     assert "LLM недоступен" in result.output

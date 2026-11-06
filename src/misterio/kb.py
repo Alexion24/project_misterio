@@ -46,7 +46,9 @@ class LocalKb:
         if not query_terms:
             return []
         with sqlite3.connect(self.db_path) as connection:
-            rows = connection.execute("SELECT text, source, locator FROM chunks").fetchall()
+            rows = connection.execute(
+                "SELECT text, source, locator FROM chunks"
+            ).fetchall()
 
         matches: list[DocumentChunk] = []
         for text, source, locator in rows:

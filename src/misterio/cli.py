@@ -42,11 +42,15 @@ def run_cmd(
     brief: Annotated[str, typer.Argument(help="Текст задачи")],
     skill: Annotated[str, typer.Option("--skill")],
     fake: Annotated[bool, typer.Option("--fake")] = False,
-    artifacts_dir: Annotated[Path, typer.Option("--artifacts-dir")] = Path("data/artifacts"),
+    artifacts_dir: Annotated[Path, typer.Option("--artifacts-dir")] = Path(
+        "data/artifacts"
+    ),
 ) -> None:
     known = {s.id for s in list_skills()}
     if skill not in known:
-        raise _fail(f"неизвестный навык '{skill}'. Доступно: {', '.join(sorted(known))}")
+        raise _fail(
+            f"неизвестный навык '{skill}'. Доступно: {', '.join(sorted(known))}"
+        )
 
     if fake:
         llm, model = FakeLlm(), "fake"
