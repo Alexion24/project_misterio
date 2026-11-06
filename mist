@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$project_dir"
+env_file="$project_dir/.env"
+
+set_env_value() {
+  local name="$1"
+  local value="$2"
+  local temp_file
+
+  touch "$env_file"
+  temp_file="$(mktemp)"
+  if ! awk -v name="$name" -v value="$value" '
+    BEGIN { found = 0 }
+    index($0, name "=") == 1 { print name "=" value; found = 1; next }
+    { print }
+    END { if (!found) print name "=" value }
+  ' "$env_file" > "$temp_file"; then
+    rm -f "$temp_file"
+    return 1
+  fi
+  mv "$temp_file" "$env_file"
+  chmod 600 "$env_file" 2>/dev/null || true
+}
+
+switch_model() {
+  local model="$1"
+
+  docker compose --profile gigachat stop ollama ollama-pull gigachat
+  if [[ "$model" == "qwen" ]]; then
+    set_env_value "MISTERIO_LLM_BASE_URL" "http://127.0.0.1:11434/v1"
+    set_env_value "MISTERIO_LLM_MODEL" "qwen3:8b"
+    docker compose up -d ollama
+  else
+    set_env_value "MISTERIO_LLM_BASE_URL" "http://127.0.0.1:8080/v1"
+    set_env_value "MISTERIO_LLM_MODEL" "ai-sage/GigaChat3.1-10B-A1.8B-GGUF:Q4_K_M"
+    docker compose --profile gigachat up -d gigachat
+  fi
+
+  echo "Активная модель: $model"
+}
+
+pull_qwen() {
+  local exit_code=0
+
+  docker compose run --rm ollama-pull || exit_code=$?
+  docker compose stop ollama
+  return "$exit_code"
+}
+
+command_name="${1:-help}"
+if [[ $# -gt 0 ]]; then
+  shift
+fi
+
+case "$command_name" in
+  ui)
+    exec uv run uvicorn misterio.api:app --reload
+    ;;
+  run)
+    if [[ $# -eq 0 ]]; then
+      echo 'Использование: ./mist run "тема частушки"' >&2
+      exit 2
+    fi
+    exec uv run misterio run "$*" --skill "${MISTERIO_SKILL:-chastushki}"
+    ;;
+  qwen|giga|gigachat)
+    model="$command_name"
+    if [[ "$model" == "giga" ]]; then
+      model="gigachat"
+    fi
+    switch_model "$model"
+    ;;
+  up)
+    docker compose up -d ollama
+    ;;
+  down)
+    docker compose --profile gigachat stop ollama ollama-pull gigachat
+    ;;
+  test)
+    exec uv run pytest --basetemp data/pytest-tmp
+    ;;
+  lint)
+    uv run ruff check .
+    uv run ruff format --check .
+    ;;
+  status)
+    docker compose --profile gigachat ps
+    ;;
+  pull)
+    pull_target="${1:-}"
+    case "$pull_target" in
+      qwen)
+        pull_qwen
+        ;;
+      giga|gigachat)
+        docker compose --profile gigachat run --rm gigachat-pull
+        ;;
+      all)
+        pull_qwen
+        docker compose --profile gigachat run --rm gigachat-pull
+        ;;
+      *)
+        echo "Использование: ./mist pull {qwen|giga|all}" >&2
+        exit 2
+        ;;
+    esac
+    ;;
+  help|-h|--help)
+    cat <<'EOF'
+Misterio — команды проекта
+
+  ./mist ui                 запустить локальный интерфейс
+  ./mist run "тема"         запустить навык chastushki
+  ./mist qwen               переключиться на Qwen
+  ./mist giga               переключиться на GigaChat
+  ./mist pull qwen          скачать Qwen без запуска сервера
+  ./mist pull giga          скачать GigaChat без запуска сервера
+  ./mist pull all           скачать обе модели без запуска серверов
+  ./mist up                 запустить Ollama
+  ./mist down               остановить LLM-сервисы
+  ./mist test               запустить тесты
+  ./mist lint               проверить Ruff
+  ./mist status             показать состояние контейнеров
+EOF
+    ;;
+  *)
+    echo "Неизвестная команда: $command_name" >&2
+    echo "Список команд: ./mist help" >&2
+    exit 2
+    ;;
+esac

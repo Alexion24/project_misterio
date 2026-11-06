@@ -5,16 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Misterio</title>
   <style>
-    :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+    :root { color-scheme: light dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
     body { margin: 0; background: Canvas; color: CanvasText; }
-    main { width: min(42rem, calc(100% - 2rem)); margin: 4rem auto; }
-    h1 { margin-bottom: .25rem; }
-    p { color: GrayText; }
-    form { display: grid; gap: 1rem; margin-top: 2rem; }
+    main { width: min(46rem, calc(100% - 2rem)); margin: 3rem auto; }
+    h1, h2 { letter-spacing: -.025em; }
+    h1 { margin-bottom: .25rem; font-size: clamp(2rem, 6vw, 3rem); }
+    h2 { margin-top: 0; }
+    p { color: GrayText; line-height: 1.55; }
+    form { display: grid; gap: 1rem; }
+    .card { margin-top: 1.25rem; padding: 1.25rem; border: 1px solid color-mix(in srgb, GrayText 45%, transparent); border-radius: 1rem; background: color-mix(in srgb, Canvas 94%, #6d28d9 6%); }
+    .model-row { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: .75rem; }
+    .model-row label { min-width: 0; }
     label { display: grid; gap: .4rem; font-weight: 600; }
     textarea, select, button { font: inherit; }
-    textarea, select { padding: .75rem; border: 1px solid GrayText; border-radius: .5rem; background: Canvas; color: CanvasText; }
+    textarea, select { box-sizing: border-box; width: 100%; padding: .75rem; border: 1px solid GrayText; border-radius: .65rem; background: Canvas; color: CanvasText; }
+    textarea { resize: vertical; min-height: 8rem; }
     button { justify-self: start; padding: .7rem 1.1rem; border: 0; border-radius: .5rem; background: #6d28d9; color: white; cursor: pointer; }
+    button.secondary { background: transparent; color: CanvasText; border: 1px solid GrayText; }
     button:disabled { cursor: wait; opacity: .7; }
     progress { width: 100%; height: .5rem; accent-color: #6d28d9; }
     .generation-status { display: grid; gap: .5rem; color: GrayText; }
@@ -22,14 +29,31 @@
     section { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid GrayText; }
     pre { white-space: pre-wrap; font: inherit; line-height: 1.6; }
     .error { color: #dc2626; }
+    .notice { color: #15803d; }
+    @media (max-width: 34rem) { .model-row { grid-template-columns: 1fr; } .model-row button { width: 100%; } }
   </style>
 </head>
 <body>
   <main>
     <h1>Misterio</h1>
-    <p>Выберите навык и опишите задачу.</p>
+    <p>Локальный генератор контента. Выберите модель, навык и задайте тему.</p>
 
-    <form method="post" id="generation-form">
+    <form method="post" action="/model" id="model-form" class="card">
+      <div class="model-row">
+        <label>
+          Активная модель
+          <select name="model" required>
+            {% for model in models %}
+            <option value="{{ model.key }}" {% if model.key == active_model %}selected{% endif %}>{{ model.label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <button type="submit" class="secondary" id="model-button">Переключить</button>
+      </div>
+      <small>При переключении текущая модель останавливается — одновременно работает только одна. Веса заранее скачиваются через <code>./mist pull qwen</code> или <code>./mist pull giga</code>.</small>
+    </form>
+
+    <form method="post" id="generation-form" class="card">
       <label>
         Навык
         <select name="skill" required>
@@ -40,7 +64,7 @@
       </label>
       <label>
         Задача
-        <textarea name="brief" rows="5" required>{{ brief }}</textarea>
+        <textarea name="brief" rows="5" maxlength="2000" required>{{ brief }}</textarea>
       </label>
       <button type="submit" id="submit-button">Создать</button>
       <div
@@ -62,6 +86,12 @@
     </section>
     {% endif %}
 
+    {% if notice %}
+    <section aria-live="polite">
+      <p class="notice">{{ notice }}</p>
+    </section>
+    {% endif %}
+
     {% if result is not none %}
     <section aria-live="polite">
       <h2>Результат</h2>
@@ -73,6 +103,8 @@
     const form = document.querySelector("#generation-form");
     const submitButton = document.querySelector("#submit-button");
     const generationStatus = document.querySelector("#generation-status");
+    const modelForm = document.querySelector("#model-form");
+    const modelButton = document.querySelector("#model-button");
 
     form.addEventListener("submit", (event) => {
       if (form.dataset.submitting === "true") {
@@ -85,6 +117,25 @@
       submitButton.disabled = true;
       submitButton.textContent = "Генерируем…";
       generationStatus.hidden = false;
+    });
+
+    modelForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      modelButton.disabled = true;
+      modelButton.textContent = "Переключаем…";
+      try {
+        const response = await fetch(modelForm.action, {
+          method: "POST",
+          body: new FormData(modelForm),
+          headers: { "X-Misterio-Action": "switch-model" }
+        });
+        document.open();
+        document.write(await response.text());
+        document.close();
+      } catch (_error) {
+        modelButton.disabled = false;
+        modelButton.textContent = "Повторить";
+      }
     });
   </script>
 </body>

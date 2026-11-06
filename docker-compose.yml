@@ -27,7 +27,7 @@ services:
       retries: 20
 
   # Одноразовый сервис: скачивает модель при первом запуске и завершается.
-  # Модель из MISTERIO_LLM_MODEL (по умолчанию qwen3:8b).
+  # Ollama-модель задаётся отдельно от активного LLM backend.
   ollama-pull:
     image: ollama/ollama:latest
     depends_on:
@@ -35,8 +35,61 @@ services:
         condition: service_healthy
     environment:
       OLLAMA_HOST: "http://ollama:11434"
-    entrypoint: ["ollama", "pull", "${MISTERIO_LLM_MODEL:-qwen3:8b}"]
+    entrypoint: ["ollama", "pull", "${MISTERIO_OLLAMA_MODEL:-qwen3:8b}"]
+    restart: "no"
+
+  # Альтернативный OpenAI-compatible сервер для локального GigaChat 3.1.
+  # Запускается только после отдельного gigachat-pull.
+  gigachat:
+    profiles: ["gigachat"]
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - gigachat-models:/models:ro
+    command:
+      - --model
+      - /models/GigaChat3.1-10B-A1.8B-q4_K_M.gguf
+      - --alias
+      - ai-sage/GigaChat3.1-10B-A1.8B-GGUF:Q4_K_M
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
+      - --ctx-size
+      - "4096"
+      - --n-gpu-layers
+      - "99"
+      - --flash-attn
+      - on
+      - --cache-type-k
+      - q8_0
+      - --cache-type-v
+      - q8_0
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # Одноразовый сервис: скачивает GGUF в общий model volume и завершается.
+  # Логи docker compose показывают прогресс загрузки.
+  gigachat-pull:
+    profiles: ["gigachat"]
+    image: python:3.12-slim
+    volumes:
+      - gigachat-models:/models
+    entrypoint: ["sh", "-c"]
+    command:
+      - >-
+        pip install --no-cache-dir "huggingface_hub[cli]" &&
+        hf download ai-sage/GigaChat3.1-10B-A1.8B-GGUF
+        GigaChat3.1-10B-A1.8B-q4_K_M.gguf --local-dir /models
     restart: "no"
 
 volumes:
   ollama:
+  gigachat-models:
