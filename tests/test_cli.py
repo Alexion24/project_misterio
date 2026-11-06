@@ -16,6 +16,22 @@ def test_skills_ls_prints_chastushki() -> None:
     assert "chastushki" in result.output
 
 
+def test_kb_ingest_indexes_seed_files(tmp_path: Path) -> None:
+    seed_dir = tmp_path / "seed"
+    seed_dir.mkdir()
+    (seed_dir / "facts.md").write_text("известный факт", encoding="utf-8")
+    db_path = tmp_path / "kb.sqlite3"
+
+    result = runner.invoke(
+        app,
+        ["kb", "ingest", "--seed-dir", str(seed_dir), "--db-path", str(db_path)],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "1" in result.output
+    assert db_path.exists()
+
+
 def test_run_writes_markdown(tmp_path: Path) -> None:
     result = runner.invoke(
         app,

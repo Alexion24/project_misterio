@@ -20,7 +20,7 @@ def test_run_uses_fake_llm_and_skips_search() -> None:
     artifact = run(job, FakeLlm(text="fake-llm-output"), knowledge=SpyKnowledge())
     assert artifact.markdown == "fake-llm-output"
     assert artifact.sources == []
-    assert job.skill_version == "0.1.0"
+    assert job.skill_version == "0.2.0"
 
 
 def test_run_requires_skill_id() -> None:

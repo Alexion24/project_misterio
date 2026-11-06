@@ -6,12 +6,15 @@ import typer
 
 from misterio.agent import run as run_job
 from misterio.contracts import Job, JobStatus
+from misterio.kb import LocalKb
 from misterio.llm import FakeLlm, LlmError, OpenAiCompatibleLlm, Settings
 from misterio.skills import list_skills
 
 app = typer.Typer(no_args_is_help=True)
 skills_app = typer.Typer(no_args_is_help=True)
+kb_app = typer.Typer(no_args_is_help=True)
 app.add_typer(skills_app, name="skills")
+app.add_typer(kb_app, name="kb")
 
 
 def _fail(message: str) -> typer.Exit:
@@ -23,6 +26,15 @@ def _fail(message: str) -> typer.Exit:
 def skills_ls() -> None:
     for s in list_skills():
         typer.echo(f"{s.id}\t{s.version}")
+
+
+@kb_app.command("ingest")
+def kb_ingest(
+    seed_dir: Annotated[Path, typer.Option("--seed-dir")] = Path("kb/seed"),
+    db_path: Annotated[Path, typer.Option("--db-path")] = Path("data/kb.sqlite3"),
+) -> None:
+    count = LocalKb(db_path).ingest(seed_dir)
+    typer.echo(f"Проиндексировано файлов: {count}")
 
 
 @app.command("run")

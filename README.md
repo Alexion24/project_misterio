@@ -23,6 +23,7 @@ uv sync
 ```bash
 uv run misterio skills ls
 uv run misterio run "про трактор" --skill chastushki --fake
+uv run misterio kb ingest
 ```
 
 Артефакт пишется в `data/artifacts/`. Без `--fake` используется OpenAI-compatible LLM из Settings (`MISTERIO_LLM_BASE_URL`, `MISTERIO_LLM_API_KEY`, `MISTERIO_LLM_MODEL`).
