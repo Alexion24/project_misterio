@@ -58,6 +58,7 @@ def test_ollama_complete_disables_thinking(httpx_mock: HTTPXMock) -> None:
             llm_base_url="http://127.0.0.1:11434/v1",
             llm_api_key="local",
             llm_model="qwen3:8b",
+            llm_api_style="ollama",
         )
     )
 

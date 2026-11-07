@@ -52,31 +52,27 @@ def test_run_uses_fake_llm_and_skips_search() -> None:
     assert artifact.markdown == "fake-llm-output"
     assert artifact.sources == []
     assert job.skill_version == "0.6.0"
-    assert len(llm.specs) == 6
-    assert all(spec.temperature == 0.8 for spec in llm.specs[:3])
-    assert llm.specs[3].temperature == 0.0
-    assert llm.specs[3].max_tokens == 10
-    assert llm.specs[4].temperature == 0.2
+    assert len(llm.specs) == 3
+    assert all(spec.temperature == 0.8 for spec in llm.specs[:2])
+    assert llm.specs[2].temperature == 0.2
     assert llm.specs[-1].top_p == 0.8
-    assert "Кандидат 3" in llm.specs[3].prompt
+    assert artifact.diagnostics.selection_reason == "local quality and rhyme score"
 
 
-def test_run_edits_only_selected_candidate_and_rejects_invalid_edit() -> None:
+def test_run_selects_valid_candidate_without_extra_llm_call() -> None:
     job = Job(
         id="job-2",
         status=JobStatus.queued,
         brief="про трактор",
         skill_id="chastushki",
     )
-    llm = SequenceLlm(
-        ["плохой первый", VALID_CHASTUSHKI, "плохой третий", "2", "сломано"]
-    )
+    llm = SequenceLlm(["плохой первый", VALID_CHASTUSHKI])
 
     artifact = run(job, llm)
 
     assert artifact.markdown == VALID_CHASTUSHKI
-    assert "плохой первый" not in llm.specs[4].prompt
-    assert VALID_CHASTUSHKI in llm.specs[4].prompt
+    assert len(llm.specs) == 2
+    assert artifact.diagnostics.selected_index == 1
 
 
 def test_run_requires_skill_id() -> None:

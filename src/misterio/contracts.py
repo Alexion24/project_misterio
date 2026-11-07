@@ -49,7 +49,6 @@ class CandidateDiagnostic(BaseModel):
 
 class GenerationDiagnostics(BaseModel):
     candidates: list[CandidateDiagnostic] = Field(default_factory=list)
-    selector_response: str | None = None
     selected_index: int = 0
     selection_reason: str = "single candidate"
 

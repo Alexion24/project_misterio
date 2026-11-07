@@ -1,5 +1,3 @@
-import re
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Protocol
 
@@ -20,13 +18,6 @@ class Knowledge(Protocol):
     def search(
         self, query: str, brand_id: str | None, k: int
     ) -> list[DocumentChunk]: ...
-
-
-def _candidate_number(answer: str, count: int) -> int | None:
-    match = re.search(r"\b([1-6])\b", answer)
-    if match and int(match.group(1)) <= count:
-        return int(match.group(1)) - 1
-    return None
 
 
 def _source_context(sources: list[DocumentChunk]) -> str:
@@ -61,8 +52,8 @@ def run(
     context = _source_context(sources)
     prompt = f"{skill_md}\n\nТема пользователя: {job.brief}{context}"
 
-    def generate_candidate(_: int) -> str:
-        return llm.complete(
+    candidates = [
+        llm.complete(
             LlmCallSpec(
                 model=model,
                 prompt=prompt,
@@ -71,11 +62,8 @@ def run(
                 max_tokens=manifest.max_tokens,
             )
         )
-
-    with ThreadPoolExecutor(max_workers=manifest.candidate_count) as executor:
-        candidates = list(
-            executor.map(generate_candidate, range(manifest.candidate_count))
-        )
+        for _ in range(manifest.candidate_count)
+    ]
     diagnostics = GenerationDiagnostics()
     text = candidates[0]
     if len(candidates) > 1:
@@ -102,70 +90,26 @@ def run(
             )
             for index, candidate in enumerate(candidates)
         ]
-        numbered = "\n\n".join(
-            f"Кандидат {index + 1} (рифма {rhyme_scores[index]:.2f}):\n"
-            f"{candidates[index]}"
-            for index in eligible
+        selected_index = max(
+            eligible,
+            key=lambda index: (-len(issues[index]), rhyme_scores[index]),
         )
-        selection = llm.complete(
-            LlmCallSpec(
-                model=model,
-                prompt=(
-                    f"Тема пользователя: {job.brief}{context}\n\n"
-                    "Выбери лучший черновик по смыслу, естественности, ритму, "
-                    "рифме и юмору. Учитывай указанную автоматическую оценку "
-                    "рифмы. Ответь только номером кандидата.\n\n"
-                    f"{numbered}"
-                ),
-                temperature=0.0,
-                top_p=manifest.top_p,
-                max_tokens=10,
-            )
-        )
-        selected_index = _candidate_number(selection, len(candidates))
-        diagnostics.selector_response = selection
-        if selected_index not in eligible:
-            selected_index = max(
-                eligible,
-                key=lambda index: (-len(issues[index]), rhyme_scores[index]),
-            )
-            diagnostics.selection_reason = (
-                "local fallback after invalid selector response"
-            )
-        else:
-            diagnostics.selection_reason = "LLM selector"
+        diagnostics.selection_reason = "local quality and rhyme score"
         diagnostics.selected_index = selected_index
         selected = candidates[selected_index]
-        text = llm.complete(
-            LlmCallSpec(
-                model=model,
-                prompt=(
-                    f"{skill_md}\n\nТема пользователя: {job.brief}{context}\n\n"
-                    "Отредактируй только этот черновик. Исправь смысл, ритм, "
-                    "рифму и неестественные фразы. Не добавляй новые строфы. "
-                    "Верни только итоговые частушки.\n\n"
-                    f"Черновик:\n{selected}"
-                ),
-                temperature=0.2,
-                top_p=manifest.top_p,
-                max_tokens=manifest.max_tokens,
-            )
-        )
+        text = selected
         if not uses_quality:
             return GenerationArtifact(
                 markdown=text, sources=sources, diagnostics=diagnostics
             )
-        final_issues = quality_issues(text)
-        if final_issues and not quality_issues(selected):
-            text = selected
-        elif final_issues:
+        if issues[selected_index]:
             repaired = llm.complete(
                 LlmCallSpec(
                     model=model,
                     prompt=(
                         f"{skill_md}\n\nТема пользователя: {job.brief}{context}\n\n"
                         "Исправь только перечисленные ошибки: "
-                        f"{'; '.join(final_issues)}. "
+                        f"{'; '.join(issues[selected_index])}. "
                         "Верни только итоговые частушки.\n\n"
                         f"Текст:\n{text}"
                     ),
@@ -182,8 +126,6 @@ def run(
                     rhyme_score(variant),
                 ),
             )
-        elif rhyme_score(text) < rhyme_score(selected):
-            text = selected
     if not diagnostics.candidates:
         diagnostics.candidates = [CandidateDiagnostic(text=text)]
     return GenerationArtifact(markdown=text, sources=sources, diagnostics=diagnostics)

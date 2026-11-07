@@ -25,6 +25,20 @@ set_env_value() {
   chmod 600 "$env_file" 2>/dev/null || true
 }
 
+wait_ready() {
+  local url="$1"
+  local attempts=60
+
+  for ((attempt = 1; attempt <= attempts; attempt++)); do
+    if curl --fail --silent --show-error "$url" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 2
+  done
+  echo "Модель не стала готова за $((attempts * 2)) секунд" >&2
+  return 1
+}
+
 switch_model() {
   local model="$1"
 
@@ -32,11 +46,15 @@ switch_model() {
   if [[ "$model" == "qwen" ]]; then
     set_env_value "MISTERIO_LLM_BASE_URL" "http://127.0.0.1:11434/v1"
     set_env_value "MISTERIO_LLM_MODEL" "qwen3:8b"
+    set_env_value "MISTERIO_LLM_API_STYLE" "ollama"
     docker compose up -d ollama
+    wait_ready "http://127.0.0.1:11434/api/tags"
   else
     set_env_value "MISTERIO_LLM_BASE_URL" "http://127.0.0.1:8080/v1"
     set_env_value "MISTERIO_LLM_MODEL" "ai-sage/GigaChat3.1-10B-A1.8B-GGUF:Q4_K_M"
+    set_env_value "MISTERIO_LLM_API_STYLE" "openai"
     docker compose --profile gigachat up -d gigachat
+    wait_ready "http://127.0.0.1:8080/health"
   fi
 
   echo "Активная модель: $model"
