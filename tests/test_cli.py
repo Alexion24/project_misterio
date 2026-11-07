@@ -5,7 +5,7 @@ from typer.testing import CliRunner
 
 import misterio.cli as cli
 from misterio.cli import app
-from misterio.llm import LlmError
+from misterio.llm import FakeLlm, LlmError
 
 runner = CliRunner()
 
@@ -49,6 +49,34 @@ def test_run_writes_markdown(tmp_path: Path) -> None:
     files = list(tmp_path.glob("*.md"))
     assert len(files) == 1
     assert files[0].read_text(encoding="utf-8") == "fake-llm-output"
+
+
+def test_run_uses_selected_model_profile(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    selected: list[str] = []
+
+    def fake_create_llm(profile_key: str) -> tuple[FakeLlm, str]:
+        selected.append(profile_key)
+        return FakeLlm(), "mimo-v2.6-flash"
+
+    monkeypatch.setattr(cli, "create_llm", fake_create_llm)
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "topic",
+            "--skill",
+            "chastushki",
+            "--model",
+            "mimo",
+            "--artifacts-dir",
+            str(tmp_path),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert selected == ["mimo"]
 
 
 def test_run_unknown_skill_exits_with_error(tmp_path: Path) -> None:

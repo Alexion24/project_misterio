@@ -13,6 +13,7 @@ flowchart LR
     Agent --> Skills[skills/*]
     Agent -.->|needs_retrieval| KB[LocalKb / SQLite]
     Agent --> LLM[OpenAiCompatibleLlm или FakeLlm]
+    LLM --> Cloud[Ollama Cloud / Mistral / MiMo]
     LLM --> Ollama[Ollama / Qwen]
     LLM --> Llama[llama.cpp / GigaChat]
     Agent --> Artifact[GenerationArtifact]
@@ -34,8 +35,8 @@ flowchart LR
 - `src/misterio/cli.py` — команды Typer для списка навыков, генерации и загрузки
   seed-файлов в KB.
 - `src/misterio/api.py` и `templates/index.html` — синхронный локальный web UI.
-- `src/misterio/models.py` — allowlist локальных моделей и взаимоисключающее
-  переключение Docker-сервисов.
+- `src/misterio/models.py` — allowlist облачных и локальных модельных профилей,
+  сборка LLM-клиента и переключение Docker-сервисов для локальных моделей.
 - `mist` — Git Bash-команды запуска, проверок и переключения LLM backend.
 
 ## Поток генерации
@@ -70,24 +71,26 @@ flowchart LR
 
 ## LLM backends
 
-`Settings` читает `.env` с префиксом `MISTERIO_`. Основные параметры —
-`LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` и таймауты. Приложение поддерживает
-любой совместимый endpoint, но Docker-конфигурация содержит два локальных
-варианта:
+`Settings` читает из `.env` только `MISTERIO_LLM_API_KEY`. URL, API-стиль и
+точный model ID задаются фиксированным allowlist в `models.py`. Реестр содержит
+четыре профиля:
 
-- Ollama на `127.0.0.1:11434` с моделью `qwen3:8b`;
-- профиль `gigachat` с CUDA-образом `llama.cpp` на `127.0.0.1:8080` и
+- `mistral` — Ollama Cloud с `mistral-large-3:675b`, профиль по умолчанию;
+- `mimo` — Ollama Cloud с `mimo-v2.6-flash`, ручной экономичный fallback;
+- `qwen` — Ollama на `127.0.0.1:11434` с моделью `qwen3:8b`;
+- `gigachat` — CUDA-образ `llama.cpp` на `127.0.0.1:8080` с
   `GigaChat3.1-10B-A1.8B-GGUF:Q4_K_M`.
 
 `./mist pull qwen`, `./mist pull giga` и `./mist pull all` скачивают веса через
-одноразовые pull-сервисы, не запуская LLM backends. `./mist qwen`, `./mist giga`
-и выбор модели в UI только переключают уже скачанные модели: сначала
-останавливают оба сервиса, затем запускают выбранный. `gigachat-pull` сохраняет
-GGUF в model volume, а GigaChat-сервер открывает его по явному локальному пути
-без сетевой загрузки. Переключатели обновляют URL и имя модели в
-игнорируемом Git файле `.env`. API-ключ переключатель не изменяет. UI принимает
-только ключи из фиксированного allowlist; переключение защищено same-origin
-проверкой и process-wide lock.
+одноразовые pull-сервисы, не запуская LLM backends. `./mist qwen` и
+`./mist giga` вручную подготавливают соответствующий локальный сервис. Выбор
+локального профиля в UI сначала останавливает оба сервиса, затем запускает
+выбранный. `gigachat-pull` сохраняет GGUF в model volume, а GigaChat-сервер
+открывает его по явному локальному пути без сетевой загрузки. Облачные профили
+переключаются только в памяти процесса и не вызывают Docker; после перезапуска
+активен `mistral`. Автоматического fallback нет. UI принимает только ключи из
+фиксированного allowlist; переключение защищено same-origin проверкой и
+process-wide lock. API-ключ передаётся только облачным endpoint.
 
 ## Локальная база знаний
 
@@ -100,7 +103,7 @@ GGUF в model volume, а GigaChat-сервер открывает его по я
 ## Интерфейсы и данные
 
 - `misterio skills ls` выводит доступные навыки.
-- `misterio run <brief> --skill <id>` запускает реальную LLM;
+- `misterio run <brief> --skill <id> [--model <profile>]` запускает реальную LLM;
   `--fake` использует `FakeLlm` без сети.
 - `uvicorn misterio.api:app` поднимает форму выбора модели, навыка и ввода
   задачи.
@@ -119,14 +122,15 @@ UI и CLI выполняют генерацию синхронно. Очеред
 результатами, диагностикой и временем в `data/evals/`:
 
 ```bash
-MISTERIO_RUN_MODEL_EVALS=1 uv run pytest -m model_eval
+MISTERIO_RUN_MODEL_EVALS=1 uv run pytest -m model_eval --model-profile=mistral
+MISTERIO_RUN_MODEL_EVALS=1 uv run pytest -m model_eval --model-profile=mimo
 ```
 
 Основные команды: `./mist test` и `./mist lint`.
 
 ## Границы проекта
 
-- LLM считается внешним локальным сервисом и доступна только через адаптер.
+- LLM считается внешним сервисом и доступна только через адаптер.
 - Навыки декларативны и не импортируют Python-код в ядро.
 - Retrieval включается только манифестом навыка.
 - Runtime-данные отделены от исходников каталогом `data/`.

@@ -1,8 +1,10 @@
 import logging
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
+import misterio.api as api
 from misterio.api import create_app
 from misterio.contracts import LlmCallSpec
 from misterio.llm import FakeLlm, LlmError
@@ -46,6 +48,8 @@ def test_form_lists_skills() -> None:
     assert 'aria-label="Генерация результата"' in response.text
     assert "Qwen 3" in response.text
     assert "GigaChat 3.1" in response.text
+    assert "Mistral Large 3" in response.text
+    assert "MiMo V2.6 Flash" in response.text
 
 
 def test_model_switch_uses_allowlisted_key() -> None:
@@ -165,6 +169,26 @@ def test_form_hides_llm_error_details_and_logs_exception(
     assert "secret-internal-url" not in response.text
     assert "LLM generation failed" in caplog.text
     assert "secret-internal-url" in caplog.text
+    assert list(tmp_path.glob("*.md")) == []
+
+
+def test_generation_reports_missing_cloud_key_as_llm_error(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    def missing_key(*args: object, **kwargs: object) -> None:
+        raise LlmError("MISTERIO_LLM_API_KEY is required for cloud models")
+
+    monkeypatch.setattr(api, "create_llm", missing_key)
+    response = TestClient(
+        create_app(artifacts_dir=tmp_path, model_switcher=FakeModelSwitcher("mistral"))
+    ).post(
+        "/",
+        data={"brief": "topic", "skill": "chastushki"},
+        headers=ORIGIN_HEADERS,
+    )
+
+    assert response.status_code == 503
+    assert "MISTERIO_LLM_API_KEY" not in response.text
     assert list(tmp_path.glob("*.md")) == []
 
 

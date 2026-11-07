@@ -1,7 +1,8 @@
 # Misterio
 
 Локальный агент для text-to-text навыков. Сейчас доступен навык генерации
-частушек; LLM запускается локально через Ollama или `llama.cpp`.
+частушек; LLM может работать через Ollama Cloud либо локально через Ollama или
+`llama.cpp`.
 
 ## Быстрый старт
 
@@ -11,21 +12,20 @@ NVIDIA Container Toolkit и Git Bash.
 ```bash
 uv sync
 cp .env.example .env
-./mist pull qwen
-./mist up
+# Укажите MISTERIO_LLM_API_KEY в .env
 ./mist ui
 ```
 
-Откройте `http://127.0.0.1:8000`. Первый запуск скачивает модель и может занять
-несколько минут.
+Откройте `http://127.0.0.1:8000`. По умолчанию используется облачный профиль
+Mistral Large 3.
 
 ## Основные команды
 
 ```bash
 ./mist ui                  # локальный интерфейс
 ./mist run "про картошку"  # навык chastushki из терминала
-./mist qwen                # остановить GigaChat и включить Qwen
-./mist giga                # остановить Qwen и включить GigaChat
+./mist qwen                # запустить локальный Qwen
+./mist giga                # запустить локальный GigaChat
 ./mist pull qwen           # скачать только Qwen
 ./mist pull giga           # скачать только GigaChat
 ./mist pull all            # скачать обе модели без запуска
@@ -39,12 +39,18 @@ cp .env.example .env
 
 ## Модели
 
-По умолчанию используется `qwen3:8b` через Ollama. `./mist giga` запускает
-GigaChat 3.1 Lightning Q4_K_M через `llama.cpp`. Переключатель сначала
-останавливает оба LLM-сервиса и только затем запускает выбранный, поэтому модели
-не занимают GPU одновременно. Его загрузка вынесена в отдельный контейнер
-`gigachat-pull`. Он сохраняет GGUF в отдельный model volume, а сервер открывает
-конкретный локальный файл и не обращается к сети.
+Реестр содержит четыре профиля:
+
+- `mistral` — Mistral Large 3 в Ollama Cloud, production-профиль по умолчанию;
+- `mimo` — MiMo V2.6 Flash в Ollama Cloud, экономичный ручной fallback;
+- `qwen` — локальный `qwen3:8b` через Ollama;
+- `gigachat` — локальный GigaChat 3.1 Lightning Q4_K_M через `llama.cpp`.
+
+Выбор облачного профиля хранится в памяти процесса и не запускает Docker. После
+перезапуска снова выбирается `mistral`; автоматического fallback между моделями
+нет. Для локальных профилей переключатель сначала останавливает оба
+LLM-сервиса, затем запускает выбранный, поэтому они не занимают GPU
+одновременно.
 
 Скачать GigaChat заранее, без запуска сервера:
 
@@ -62,8 +68,9 @@ GigaChat 3.1 Lightning Q4_K_M через `llama.cpp`. Переключатель
 `ollama-pull` и останавливается сразу после скачивания. GigaChat загружается без
 запуска `llama.cpp`.
 
-Активные `MISTERIO_LLM_BASE_URL` и `MISTERIO_LLM_MODEL` сохраняются в локальном
-`.env`, который исключён из Git. Ключ API переключатель не читает и не меняет.
+В `.env` хранится только `MISTERIO_LLM_API_KEY`, необходимый облачным профилям.
+Локальным backend ключ не передаётся. URL, API-стиль и точные model ID заданы в
+реестре профилей, а не в окружении.
 
 ## CLI
 
@@ -71,6 +78,7 @@ GigaChat 3.1 Lightning Q4_K_M через `llama.cpp`. Переключатель
 uv run misterio skills ls
 uv run misterio kb ingest
 uv run misterio run "про трактор" --skill chastushki
+uv run misterio run "про трактор" --skill chastushki --model mimo
 ```
 
 Результаты сохраняются в `data/artifacts/`. Локальные данные из `data/` не

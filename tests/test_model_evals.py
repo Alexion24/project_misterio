@@ -8,7 +8,8 @@ import pytest
 from misterio.agent import run
 from misterio.chastushki import quality_issues
 from misterio.contracts import Job, JobStatus
-from misterio.llm import LlmError, OpenAiCompatibleLlm, Settings
+from misterio.llm import LlmError
+from misterio.models import MODEL_OPTIONS, create_llm
 
 CASES_PATH = Path(__file__).parents[1] / "evals" / "chastushki.json"
 CASES = json.loads(CASES_PATH.read_text(encoding="utf-8"))
@@ -19,12 +20,15 @@ CASES = json.loads(CASES_PATH.read_text(encoding="utf-8"))
     os.getenv("MISTERIO_RUN_MODEL_EVALS") != "1",
     reason="set MISTERIO_RUN_MODEL_EVALS=1 to evaluate the configured model",
 )
-def test_real_model_chastushki_report() -> None:
-    settings = Settings()
-    settings.llm_timeout_s = float(os.getenv("MISTERIO_EVAL_TIMEOUT_S", "120"))
+def test_real_model_chastushki_report(request: pytest.FixtureRequest) -> None:
+    profile_key = request.config.getoption("--model-profile")
+    option = MODEL_OPTIONS[profile_key]
+    llm, model = create_llm(
+        profile_key,
+        timeout_s=float(os.getenv("MISTERIO_EVAL_TIMEOUT_S", "120")),
+    )
     repetitions = int(os.getenv("MISTERIO_EVAL_REPETITIONS", "3"))
     min_pass_rate = float(os.getenv("MISTERIO_EVAL_MIN_PASS_RATE", "0.8"))
-    llm = OpenAiCompatibleLlm(settings)
     results = []
     started = perf_counter()
     for case in CASES:
@@ -40,7 +44,7 @@ def test_real_model_chastushki_report() -> None:
                         skill_id="chastushki",
                     ),
                     llm,
-                    model=settings.llm_model,
+                    model=model,
                 )
             except LlmError as error:
                 results.append(
@@ -72,8 +76,8 @@ def test_real_model_chastushki_report() -> None:
     passed = sum(case["passed"] for case in results)
     pass_rate = passed / len(results)
     report = {
-        "model": settings.llm_model,
-        "api_style": settings.llm_api_style,
+        "model": model,
+        "api_style": option.api_style,
         "repetitions": repetitions,
         "min_pass_rate": min_pass_rate,
         "passed": passed,
@@ -84,7 +88,7 @@ def test_real_model_chastushki_report() -> None:
     }
     report_dir = Path(os.getenv("MISTERIO_EVALS_DIR", "data/evals"))
     report_dir.mkdir(parents=True, exist_ok=True)
-    filename = settings.llm_model.replace("/", "_").replace(":", "_") + ".json"
+    filename = model.replace("/", "_").replace(":", "_") + ".json"
     (report_dir / filename).write_text(
         json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
     )

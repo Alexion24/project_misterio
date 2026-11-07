@@ -3,28 +3,6 @@ set -euo pipefail
 
 project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$project_dir"
-env_file="$project_dir/.env"
-
-set_env_value() {
-  local name="$1"
-  local value="$2"
-  local temp_file
-
-  touch "$env_file"
-  temp_file="$(mktemp)"
-  if ! awk -v name="$name" -v value="$value" '
-    BEGIN { found = 0 }
-    index($0, name "=") == 1 { print name "=" value; found = 1; next }
-    { print }
-    END { if (!found) print name "=" value }
-  ' "$env_file" > "$temp_file"; then
-    rm -f "$temp_file"
-    return 1
-  fi
-  mv "$temp_file" "$env_file"
-  chmod 600 "$env_file" 2>/dev/null || true
-}
-
 wait_ready() {
   local url="$1"
   local attempts=60
@@ -44,20 +22,14 @@ switch_model() {
 
   docker compose --profile gigachat stop ollama ollama-pull gigachat
   if [[ "$model" == "qwen" ]]; then
-    set_env_value "MISTERIO_LLM_BASE_URL" "http://127.0.0.1:11434/v1"
-    set_env_value "MISTERIO_LLM_MODEL" "qwen3:8b"
-    set_env_value "MISTERIO_LLM_API_STYLE" "ollama"
     docker compose up -d ollama
     wait_ready "http://127.0.0.1:11434/api/tags"
   else
-    set_env_value "MISTERIO_LLM_BASE_URL" "http://127.0.0.1:8080/v1"
-    set_env_value "MISTERIO_LLM_MODEL" "ai-sage/GigaChat3.1-10B-A1.8B-GGUF:Q4_K_M"
-    set_env_value "MISTERIO_LLM_API_STYLE" "openai"
     docker compose --profile gigachat up -d gigachat
     wait_ready "http://127.0.0.1:8080/health"
   fi
 
-  echo "Активная модель: $model"
+  echo "Локальный backend готов: $model. Выберите этот профиль в UI или CLI."
 }
 
 pull_qwen() {
@@ -78,11 +50,20 @@ case "$command_name" in
     exec uv run uvicorn misterio.api:app --reload
     ;;
   run)
+    model="mistral"
+    if [[ "${1:-}" == "--model" ]]; then
+      if [[ $# -lt 3 ]]; then
+        echo 'Использование: ./mist run [--model PROFILE] "тема частушки"' >&2
+        exit 2
+      fi
+      model="$2"
+      shift 2
+    fi
     if [[ $# -eq 0 ]]; then
-      echo 'Использование: ./mist run "тема частушки"' >&2
+      echo 'Использование: ./mist run [--model PROFILE] "тема частушки"' >&2
       exit 2
     fi
-    exec uv run misterio run "$*" --skill "${MISTERIO_SKILL:-chastushki}"
+    exec uv run misterio run "$*" --skill "${MISTERIO_SKILL:-chastushki}" --model "$model"
     ;;
   qwen|giga|gigachat)
     model="$command_name"
@@ -131,9 +112,10 @@ case "$command_name" in
 Misterio — команды проекта
 
   ./mist ui                 запустить локальный интерфейс
-  ./mist run "тема"         запустить навык chastushki
-  ./mist qwen               переключиться на Qwen
-  ./mist giga               переключиться на GigaChat
+  ./mist run "тема"         запустить навык через Mistral
+  ./mist run --model mimo "тема"  явно выбрать профиль модели
+  ./mist qwen               запустить локальный Qwen backend
+  ./mist giga               запустить локальный GigaChat backend
   ./mist pull qwen          скачать Qwen без запуска сервера
   ./mist pull giga          скачать GigaChat без запуска сервера
   ./mist pull all           скачать обе модели без запуска серверов

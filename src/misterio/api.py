@@ -9,12 +9,13 @@ from fastapi.templating import Jinja2Templates
 from misterio.agent import run as run_job
 from misterio.contracts import Job, JobStatus
 from misterio.kb import LocalKb
-from misterio.llm import Llm, LlmError, OpenAiCompatibleLlm, Settings
+from misterio.llm import Llm, LlmError
 from misterio.models import (
     MODEL_OPTIONS,
-    DockerModelSwitcher,
+    ModelProfileSwitcher,
     ModelSwitcher,
     ModelSwitchError,
+    create_llm,
 )
 from misterio.skills import DEFAULT_SKILLS_DIR, list_skills
 
@@ -32,7 +33,7 @@ def create_app(
     knowledge: LocalKb | None = None,
 ) -> FastAPI:
     app = FastAPI(title="Misterio")
-    switcher = model_switcher or DockerModelSwitcher(PROJECT_DIR)
+    switcher = model_switcher or ModelProfileSwitcher(PROJECT_DIR)
 
     @app.get("/", response_class=HTMLResponse)
     def form(request: Request) -> HTMLResponse:
@@ -115,7 +116,6 @@ def create_app(
                 status_code=400,
             )
 
-        active_llm, active_model = _resolve_llm(llm, model)
         job = Job(
             id=uuid4().hex,
             status=JobStatus.queued,
@@ -123,6 +123,7 @@ def create_app(
             skill_id=skill,
         )
         try:
+            active_llm, active_model = _resolve_llm(llm, model, switcher.active_key())
             artifact = run_job(
                 job, active_llm, model=active_model, knowledge=knowledge or LocalKb()
             )
@@ -176,11 +177,15 @@ def _is_same_origin(request: Request) -> bool:
     )
 
 
-def _resolve_llm(llm: Llm | None, model: str | None) -> tuple[Llm, str]:
+def _resolve_llm(
+    llm: Llm | None,
+    model: str | None,
+    profile_key: str,
+) -> tuple[Llm, str]:
     if llm is not None:
         return llm, model or "fake"
-    settings = Settings()
-    return OpenAiCompatibleLlm(settings), model or settings.llm_model
+    active_llm, active_model = create_llm(profile_key)
+    return active_llm, model or active_model
 
 
 def _page(

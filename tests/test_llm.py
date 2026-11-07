@@ -5,17 +5,18 @@ import pytest
 from pytest_httpx import HTTPXMock
 
 from misterio.contracts import LlmCallSpec
-from misterio.llm import FakeLlm, LlmError, OpenAiCompatibleLlm, Settings
+from misterio.llm import FakeLlm, LlmConfig, LlmError, OpenAiCompatibleLlm
 
 
 def _llm() -> OpenAiCompatibleLlm:
     return OpenAiCompatibleLlm(
-        Settings(
-            llm_base_url="http://llm.test/v1",
-            llm_api_key="sk-test",
-            llm_model="test-model",
-            llm_api_style="openai",
-        )
+        LlmConfig(
+            base_url="http://llm.test/v1",
+            model="test-model",
+            api_style="openai",
+            requires_api_key=True,
+        ),
+        "sk-test",
     )
 
 
@@ -54,17 +55,19 @@ def test_ollama_complete_disables_thinking(httpx_mock: HTTPXMock) -> None:
         json={"message": {"content": "картошка"}},
     )
     llm = OpenAiCompatibleLlm(
-        Settings(
-            llm_base_url="http://127.0.0.1:11434/v1",
-            llm_api_key="local",
-            llm_model="qwen3:8b",
-            llm_api_style="ollama",
-        )
+        LlmConfig(
+            base_url="http://127.0.0.1:11434/v1",
+            model="qwen3:8b",
+            api_style="ollama",
+        ),
+        "secret-cloud-key",
     )
 
     assert llm.complete(_spec()) == "картошка"
 
-    body = json.loads(httpx_mock.get_request().content)
+    request = httpx_mock.get_request()
+    body = json.loads(request.content)
+    assert "Authorization" not in request.headers
     assert body["think"] is False
     assert body["stream"] is False
     assert body["options"]["num_predict"] == 500

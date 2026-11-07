@@ -1,12 +1,10 @@
-import os
 import subprocess
-import tempfile
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from threading import Lock
-from typing import Protocol
+from typing import Literal, Protocol
 
-from misterio.llm import Settings
+from misterio.llm import LlmConfig, LlmError, OpenAiCompatibleLlm, Settings
 
 
 @dataclass(frozen=True)
@@ -15,11 +13,41 @@ class ModelOption:
     label: str
     base_url: str
     model: str
-    api_style: str
-    start_command: tuple[str, ...]
+    api_style: Literal["openai", "ollama"]
+    start_command: tuple[str, ...] | None
+    requires_api_key: bool = False
+
+    def llm_config(self) -> LlmConfig:
+        return LlmConfig(
+            base_url=self.base_url,
+            model=self.model,
+            api_style=self.api_style,
+            requires_api_key=self.requires_api_key,
+        )
+
+
+DEFAULT_MODEL_KEY = "mistral"
 
 
 MODEL_OPTIONS = {
+    "mistral": ModelOption(
+        key="mistral",
+        label="Mistral Large 3",
+        base_url="https://ollama.com/v1",
+        model="mistral-large-3:675b",
+        api_style="ollama",
+        start_command=None,
+        requires_api_key=True,
+    ),
+    "mimo": ModelOption(
+        key="mimo",
+        label="MiMo V2.6 Flash",
+        base_url="https://ollama.com/v1",
+        model="mimo-v2.6-flash",
+        api_style="ollama",
+        start_command=None,
+        requires_api_key=True,
+    ),
     "qwen": ModelOption(
         key="qwen",
         label="Qwen 3 · 8B",
@@ -69,21 +97,13 @@ class ModelSwitcher(Protocol):
     def switch(self, key: str) -> None: ...
 
 
-class DockerModelSwitcher:
+class ModelProfileSwitcher:
     def __init__(self, project_dir: Path) -> None:
         self._project_dir = project_dir
-        self._env_path = project_dir / ".env"
-        self._active_key = self._detect_active_key()
+        self._active_key = DEFAULT_MODEL_KEY
 
     def active_key(self) -> str:
         return self._active_key
-
-    def _detect_active_key(self) -> str:
-        settings = Settings()
-        for option in MODEL_OPTIONS.values():
-            if settings.llm_model == option.model:
-                return option.key
-        return "qwen"
 
     def switch(self, key: str) -> None:
         option = MODEL_OPTIONS.get(key)
@@ -91,19 +111,14 @@ class DockerModelSwitcher:
             raise ValueError(f"unknown model: {key}")
 
         with MODEL_SWITCH_LOCK:
-            original_env = (
-                self._env_path.read_bytes() if self._env_path.exists() else None
-            )
+            if option.start_command is None:
+                self._active_key = key
+                return
             try:
                 self._run(STOP_COMMAND)
-                self._write_settings(option)
                 self._run(option.start_command)
             except (OSError, subprocess.SubprocessError) as exc:
-                self._restore_settings(original_env)
                 raise ModelSwitchError("Docker model switch failed") from exc
-            os.environ["MISTERIO_LLM_BASE_URL"] = option.base_url
-            os.environ["MISTERIO_LLM_MODEL"] = option.model
-            os.environ["MISTERIO_LLM_API_STYLE"] = option.api_style
             self._active_key = key
 
     def _run(self, command: tuple[str, ...]) -> None:
@@ -116,44 +131,19 @@ class DockerModelSwitcher:
             timeout=1_800,
         )
 
-    def _write_settings(self, option: ModelOption) -> None:
-        values = {
-            "MISTERIO_LLM_BASE_URL": option.base_url,
-            "MISTERIO_LLM_MODEL": option.model,
-            "MISTERIO_LLM_API_STYLE": option.api_style,
-        }
-        lines = (
-            self._env_path.read_text(encoding="utf-8").splitlines()
-            if self._env_path.exists()
-            else []
-        )
-        seen: set[str] = set()
-        updated: list[str] = []
-        for line in lines:
-            name, separator, _ = line.partition("=")
-            if separator and name in values:
-                updated.append(f"{name}={values[name]}")
-                seen.add(name)
-            else:
-                updated.append(line)
-        updated.extend(
-            f"{name}={value}" for name, value in values.items() if name not in seen
-        )
 
-        self._replace_settings(("\n".join(updated) + "\n").encode())
-
-    def _restore_settings(self, content: bytes | None) -> None:
-        if content is None:
-            self._env_path.unlink(missing_ok=True)
-            return
-        self._replace_settings(content)
-
-    def _replace_settings(self, content: bytes) -> None:
-        file_descriptor, temp_name = tempfile.mkstemp(prefix="misterio-env-")
-        temp_path = Path(temp_name)
-        try:
-            with os.fdopen(file_descriptor, "wb") as temp_file:
-                temp_file.write(content)
-            os.replace(temp_path, self._env_path)
-        finally:
-            temp_path.unlink(missing_ok=True)
+def create_llm(
+    profile_key: str = DEFAULT_MODEL_KEY,
+    settings: Settings | None = None,
+    timeout_s: float | None = None,
+) -> tuple[OpenAiCompatibleLlm, str]:
+    option = MODEL_OPTIONS.get(profile_key)
+    if option is None:
+        raise ValueError(f"unknown model: {profile_key}")
+    active_settings = settings or Settings()
+    if option.requires_api_key and not active_settings.llm_api_key:
+        raise LlmError("MISTERIO_LLM_API_KEY is required for cloud models")
+    config = option.llm_config()
+    if timeout_s is not None:
+        config = replace(config, timeout_s=timeout_s)
+    return OpenAiCompatibleLlm(config, active_settings.llm_api_key), option.model

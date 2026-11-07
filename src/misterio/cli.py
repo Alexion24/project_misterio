@@ -7,7 +7,8 @@ import typer
 from misterio.agent import run as run_job
 from misterio.contracts import Job, JobStatus
 from misterio.kb import LocalKb
-from misterio.llm import FakeLlm, LlmError, OpenAiCompatibleLlm, Settings
+from misterio.llm import FakeLlm, LlmError
+from misterio.models import DEFAULT_MODEL_KEY, MODEL_OPTIONS, create_llm
 from misterio.skills import list_skills
 
 app = typer.Typer(no_args_is_help=True)
@@ -41,6 +42,7 @@ def kb_ingest(
 def run_cmd(
     brief: Annotated[str, typer.Argument(help="Текст задачи")],
     skill: Annotated[str, typer.Option("--skill")],
+    model_profile: Annotated[str, typer.Option("--model")] = DEFAULT_MODEL_KEY,
     fake: Annotated[bool, typer.Option("--fake")] = False,
     artifacts_dir: Annotated[Path, typer.Option("--artifacts-dir")] = Path(
         "data/artifacts"
@@ -55,8 +57,12 @@ def run_cmd(
     if fake:
         llm, model = FakeLlm(), "fake"
     else:
-        settings = Settings()
-        llm, model = OpenAiCompatibleLlm(settings), settings.llm_model
+        if model_profile not in MODEL_OPTIONS:
+            raise _fail(f"unknown model '{model_profile}'")
+        try:
+            llm, model = create_llm(model_profile)
+        except LlmError as error:
+            raise _fail(str(error)) from error
 
     job = Job(id=uuid4().hex, status=JobStatus.queued, brief=brief, skill_id=skill)
     try:

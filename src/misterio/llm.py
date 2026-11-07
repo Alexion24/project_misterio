@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Literal, Protocol
 
 import httpx
@@ -17,14 +18,17 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    llm_base_url: str = "http://127.0.0.1:11434/v1"
-    llm_api_key: str = "local"
-    llm_model: str = "qwen3:8b"
-    llm_api_style: Literal["openai", "ollama"] = "ollama"
-    # Локальная модель может долго грузиться при первом вызове
-    # и медленно отвечать, поэтому таймаут намного больше, чем у облачного API.
-    llm_timeout_s: float = 300.0
-    llm_connect_timeout_s: float = 5.0
+    llm_api_key: str = ""
+
+
+@dataclass(frozen=True)
+class LlmConfig:
+    base_url: str
+    model: str
+    api_style: Literal["openai", "ollama"]
+    requires_api_key: bool = False
+    timeout_s: float = 300.0
+    connect_timeout_s: float = 5.0
 
 
 class Llm(Protocol):
@@ -40,18 +44,26 @@ class FakeLlm:
 
 
 class OpenAiCompatibleLlm:
-    def __init__(self, settings: Settings, client: httpx.Client | None = None) -> None:
-        self._settings = settings
-        base_url = settings.llm_base_url.rstrip("/") + "/"
+    def __init__(
+        self,
+        config: LlmConfig,
+        api_key: str = "",
+        client: httpx.Client | None = None,
+    ) -> None:
+        self._config = config
+        base_url = config.base_url.rstrip("/") + "/"
         self._ollama_chat_url = None
-        if settings.llm_api_style == "ollama":
+        if config.api_style == "ollama":
             self._ollama_chat_url = base_url.removesuffix("v1/") + "api/chat"
+        headers = (
+            {"Authorization": f"Bearer {api_key}"} if config.requires_api_key else None
+        )
         self._client = client or httpx.Client(
             base_url=base_url,
-            headers={"Authorization": f"Bearer {settings.llm_api_key}"},
+            headers=headers,
             timeout=httpx.Timeout(
-                settings.llm_timeout_s,
-                connect=settings.llm_connect_timeout_s,
+                config.timeout_s,
+                connect=config.connect_timeout_s,
             ),
         )
 
@@ -61,7 +73,7 @@ class OpenAiCompatibleLlm:
                 response = self._client.post(
                     self._ollama_chat_url,
                     json={
-                        "model": spec.model or self._settings.llm_model,
+                        "model": spec.model or self._config.model,
                         "messages": [{"role": "user", "content": spec.prompt}],
                         "think": False,
                         "stream": False,
@@ -76,7 +88,7 @@ class OpenAiCompatibleLlm:
                 response = self._client.post(
                     "chat/completions",
                     json={
-                        "model": spec.model or self._settings.llm_model,
+                        "model": spec.model or self._config.model,
                         "messages": [{"role": "user", "content": spec.prompt}],
                         "temperature": spec.temperature,
                         "top_p": spec.top_p,
