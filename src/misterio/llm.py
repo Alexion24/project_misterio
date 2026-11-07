@@ -1,4 +1,4 @@
-from typing import Protocol
+from typing import Literal, Protocol
 
 import httpx
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     llm_base_url: str = "http://127.0.0.1:11434/v1"
     llm_api_key: str = "local"
     llm_model: str = "qwen3:8b"
+    llm_api_style: Literal["openai", "ollama"] = "ollama"
     # Локальная модель может долго грузиться при первом вызове
     # и медленно отвечать, поэтому таймаут намного больше, чем у облачного API.
     llm_timeout_s: float = 300.0
@@ -42,6 +43,9 @@ class OpenAiCompatibleLlm:
     def __init__(self, settings: Settings, client: httpx.Client | None = None) -> None:
         self._settings = settings
         base_url = settings.llm_base_url.rstrip("/") + "/"
+        self._ollama_chat_url = None
+        if settings.llm_api_style == "ollama":
+            self._ollama_chat_url = base_url.removesuffix("v1/") + "api/chat"
         self._client = client or httpx.Client(
             base_url=base_url,
             headers={"Authorization": f"Bearer {settings.llm_api_key}"},
@@ -53,16 +57,39 @@ class OpenAiCompatibleLlm:
 
     def complete(self, spec: LlmCallSpec) -> str:
         try:
-            response = self._client.post(
-                "chat/completions",
-                json={
-                    "model": spec.model or self._settings.llm_model,
-                    "messages": [{"role": "user", "content": spec.prompt}],
-                    "temperature": spec.temperature,
-                },
-            )
+            if self._ollama_chat_url:
+                response = self._client.post(
+                    self._ollama_chat_url,
+                    json={
+                        "model": spec.model or self._settings.llm_model,
+                        "messages": [{"role": "user", "content": spec.prompt}],
+                        "think": False,
+                        "stream": False,
+                        "options": {
+                            "temperature": spec.temperature,
+                            "top_p": spec.top_p,
+                            "num_predict": spec.max_tokens,
+                        },
+                    },
+                )
+            else:
+                response = self._client.post(
+                    "chat/completions",
+                    json={
+                        "model": spec.model or self._settings.llm_model,
+                        "messages": [{"role": "user", "content": spec.prompt}],
+                        "temperature": spec.temperature,
+                        "top_p": spec.top_p,
+                        "max_tokens": spec.max_tokens,
+                    },
+                )
             response.raise_for_status()
-            content = response.json()["choices"][0]["message"]["content"]
+            data = response.json()
+            content = (
+                data["message"]["content"]
+                if self._ollama_chat_url
+                else data["choices"][0]["message"]["content"]
+            )
         except httpx.HTTPError as e:
             raise LlmError(f"LLM недоступен или вернул ошибку: {e}") from e
         except (KeyError, IndexError, TypeError, ValueError) as e:

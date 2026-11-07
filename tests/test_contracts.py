@@ -33,6 +33,10 @@ def test_models_from_valid_dicts() -> None:
     )
     assert manifest.needs_retrieval is False
     assert manifest.temperature == 0.0
+    assert manifest.top_p == 1.0
+    assert manifest.max_tokens == 500
+    assert manifest.candidate_count == 1
+    assert manifest.quality_policy == "none"
 
     chunk = DocumentChunk.model_validate(
         {
@@ -48,6 +52,8 @@ def test_models_from_valid_dicts() -> None:
     spec = LlmCallSpec.model_validate({"model": "fake", "prompt": "hi"})
     assert artifact.markdown == "ok"
     assert spec.temperature == 0.0
+    assert spec.top_p == 1.0
+    assert spec.max_tokens == 500
 
 
 def test_job_rejects_missing_brief() -> None:

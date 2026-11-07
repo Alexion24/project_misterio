@@ -1,6 +1,6 @@
 {
   "id": "chastushki",
-  "version": "0.3.0",
+  "version": "0.6.0",
   "input_schema": {
     "type": "object",
     "properties": {
@@ -16,5 +16,9 @@
     "required": ["text"]
   },
   "needs_retrieval": false,
-  "temperature": 0.7
+  "temperature": 0.8,
+  "top_p": 0.8,
+  "max_tokens": 350,
+  "candidate_count": 3,
+  "quality_policy": "chastushki"
 }

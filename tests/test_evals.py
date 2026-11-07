@@ -24,3 +24,12 @@ def test_chastushki_eval_preserves_topic(case: dict[str, str]) -> None:
 
     assert case["expected_topic"].casefold() in artifact.markdown.casefold()
     assert artifact.sources == []
+
+    stanzas = artifact.markdown.split("\n\n")
+    assert len(stanzas) == 2
+    assert all(len(stanza.splitlines()) == 4 for stanza in stanzas)
+    assert all(
+        3 <= len(line.split()) <= 7
+        for stanza in stanzas
+        for line in stanza.splitlines()
+    )

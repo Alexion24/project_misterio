@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -27,6 +27,10 @@ class SkillManifest(BaseModel):
     output_schema: dict[str, Any]
     needs_retrieval: bool = False
     temperature: float = Field(default=0.0, ge=0.0, le=2.0)
+    top_p: float = Field(default=1.0, gt=0.0, le=1.0)
+    max_tokens: int = Field(default=500, ge=1)
+    candidate_count: int = Field(default=1, ge=1, le=6)
+    quality_policy: Literal["none", "chastushki"] = "none"
 
 
 class DocumentChunk(BaseModel):
@@ -45,3 +49,5 @@ class LlmCallSpec(BaseModel):
     model: str
     prompt: str
     temperature: float = 0.0
+    top_p: float = Field(default=1.0, gt=0.0, le=1.0)
+    max_tokens: int = Field(default=500, ge=1)

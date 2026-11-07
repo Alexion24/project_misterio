@@ -15,6 +15,7 @@ class ModelOption:
     label: str
     base_url: str
     model: str
+    api_style: str
     start_command: tuple[str, ...]
 
 
@@ -24,6 +25,7 @@ MODEL_OPTIONS = {
         label="Qwen 3 · 8B",
         base_url="http://127.0.0.1:11434/v1",
         model="qwen3:8b",
+        api_style="ollama",
         start_command=("docker", "compose", "up", "-d", "ollama"),
     ),
     "gigachat": ModelOption(
@@ -31,6 +33,7 @@ MODEL_OPTIONS = {
         label="GigaChat 3.1 · Q4",
         base_url="http://127.0.0.1:8080/v1",
         model="ai-sage/GigaChat3.1-10B-A1.8B-GGUF:Q4_K_M",
+        api_style="openai",
         start_command=(
             "docker",
             "compose",
@@ -100,6 +103,7 @@ class DockerModelSwitcher:
                 raise ModelSwitchError("Docker model switch failed") from exc
             os.environ["MISTERIO_LLM_BASE_URL"] = option.base_url
             os.environ["MISTERIO_LLM_MODEL"] = option.model
+            os.environ["MISTERIO_LLM_API_STYLE"] = option.api_style
             self._active_key = key
 
     def _run(self, command: tuple[str, ...]) -> None:
@@ -116,6 +120,7 @@ class DockerModelSwitcher:
         values = {
             "MISTERIO_LLM_BASE_URL": option.base_url,
             "MISTERIO_LLM_MODEL": option.model,
+            "MISTERIO_LLM_API_STYLE": option.api_style,
         }
         lines = (
             self._env_path.read_text(encoding="utf-8").splitlines()

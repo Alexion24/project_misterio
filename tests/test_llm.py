@@ -14,6 +14,7 @@ def _llm() -> OpenAiCompatibleLlm:
             llm_base_url="http://llm.test/v1",
             llm_api_key="sk-test",
             llm_model="test-model",
+            llm_api_style="openai",
         )
     )
 
@@ -42,6 +43,30 @@ def test_openai_compatible_complete_uses_httpx_mock(httpx_mock: HTTPXMock) -> No
     assert request.headers["Authorization"] == "Bearer sk-test"
     assert body["model"] == "test-model"
     assert body["messages"] == [{"role": "user", "content": "hello"}]
+    assert body["top_p"] == 1.0
+    assert body["max_tokens"] == 500
+
+
+def test_ollama_complete_disables_thinking(httpx_mock: HTTPXMock) -> None:
+    httpx_mock.add_response(
+        method="POST",
+        url="http://127.0.0.1:11434/api/chat",
+        json={"message": {"content": "картошка"}},
+    )
+    llm = OpenAiCompatibleLlm(
+        Settings(
+            llm_base_url="http://127.0.0.1:11434/v1",
+            llm_api_key="local",
+            llm_model="qwen3:8b",
+        )
+    )
+
+    assert llm.complete(_spec()) == "картошка"
+
+    body = json.loads(httpx_mock.get_request().content)
+    assert body["think"] is False
+    assert body["stream"] is False
+    assert body["options"]["num_predict"] == 500
 
 
 def test_http_status_error_becomes_llm_error(httpx_mock: HTTPXMock) -> None:

@@ -37,6 +37,7 @@ def test_switch_stops_both_backends_before_starting_selected_model(
     settings = env_path.read_text(encoding="utf-8")
     assert "MISTERIO_LLM_API_KEY=secret" in settings
     assert MODEL_OPTIONS["gigachat"].model in settings
+    assert "MISTERIO_LLM_API_STYLE=openai" in settings
 
 
 def test_switch_restores_env_when_docker_start_fails(

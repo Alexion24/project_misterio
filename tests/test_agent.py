@@ -12,11 +12,32 @@ class SpyKnowledge:
 
 class CapturingLlm:
     def __init__(self) -> None:
-        self.spec: LlmCallSpec | None = None
+        self.specs: list[LlmCallSpec] = []
 
     def complete(self, spec: LlmCallSpec) -> str:
-        self.spec = spec
+        self.specs.append(spec)
         return "fake-llm-output"
+
+
+class SequenceLlm:
+    def __init__(self, responses: list[str]) -> None:
+        self.responses = iter(responses)
+        self.specs: list[LlmCallSpec] = []
+
+    def complete(self, spec: LlmCallSpec) -> str:
+        self.specs.append(spec)
+        return next(self.responses)
+
+
+VALID_CHASTUSHKI = """По деревне трактор мчится,
+Пыль клубится за трубой.
+Петя думал прокатиться —
+Еле выбрался домой.
+
+Трактор едет по дороге,
+Пыль летит над бугром.
+Куры спрятались в тревоге —
+Кот командует двором!"""
 
 
 def test_run_uses_fake_llm_and_skips_search() -> None:
@@ -27,12 +48,35 @@ def test_run_uses_fake_llm_and_skips_search() -> None:
         skill_id="chastushki",
     )
     llm = CapturingLlm()
-    artifact = run(job, llm, knowledge=SpyKnowledge())
+    artifact = run(job, llm, knowledge=SpyKnowledge(), model="qwen3:8b")
     assert artifact.markdown == "fake-llm-output"
     assert artifact.sources == []
-    assert job.skill_version == "0.3.0"
-    assert llm.spec is not None
-    assert llm.spec.temperature == 0.7
+    assert job.skill_version == "0.6.0"
+    assert len(llm.specs) == 6
+    assert all(spec.temperature == 0.8 for spec in llm.specs[:3])
+    assert llm.specs[3].temperature == 0.0
+    assert llm.specs[3].max_tokens == 10
+    assert llm.specs[4].temperature == 0.2
+    assert llm.specs[-1].top_p == 0.8
+    assert "Кандидат 3" in llm.specs[3].prompt
+
+
+def test_run_edits_only_selected_candidate_and_rejects_invalid_edit() -> None:
+    job = Job(
+        id="job-2",
+        status=JobStatus.queued,
+        brief="про трактор",
+        skill_id="chastushki",
+    )
+    llm = SequenceLlm(
+        ["плохой первый", VALID_CHASTUSHKI, "плохой третий", "2", "сломано"]
+    )
+
+    artifact = run(job, llm)
+
+    assert artifact.markdown == VALID_CHASTUSHKI
+    assert "плохой первый" not in llm.specs[4].prompt
+    assert VALID_CHASTUSHKI in llm.specs[4].prompt
 
 
 def test_run_requires_skill_id() -> None:
