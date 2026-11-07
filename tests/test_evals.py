@@ -12,7 +12,7 @@ CASES = json.loads(CASES_PATH.read_text(encoding="utf-8"))
 
 
 @pytest.mark.parametrize("case", CASES, ids=[case["expected_topic"] for case in CASES])
-def test_chastushki_eval_preserves_topic(case: dict[str, str]) -> None:
+def test_chastushki_contract_fixture_preserves_topic(case: dict[str, str]) -> None:
     job = Job(
         id=f"eval-{case['expected_topic']}",
         status=JobStatus.queued,

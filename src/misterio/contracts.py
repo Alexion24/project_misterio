@@ -40,9 +40,24 @@ class DocumentChunk(BaseModel):
     score: float
 
 
+class CandidateDiagnostic(BaseModel):
+    text: str
+    quality_issues: list[str] = Field(default_factory=list)
+    rhyme_score: float = 0.0
+    eligible: bool = True
+
+
+class GenerationDiagnostics(BaseModel):
+    candidates: list[CandidateDiagnostic] = Field(default_factory=list)
+    selector_response: str | None = None
+    selected_index: int = 0
+    selection_reason: str = "single candidate"
+
+
 class GenerationArtifact(BaseModel):
     markdown: str
     sources: list[DocumentChunk] = Field(default_factory=list)
+    diagnostics: GenerationDiagnostics = Field(default_factory=GenerationDiagnostics)
 
 
 class LlmCallSpec(BaseModel):

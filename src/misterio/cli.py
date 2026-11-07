@@ -60,11 +60,14 @@ def run_cmd(
 
     job = Job(id=uuid4().hex, status=JobStatus.queued, brief=brief, skill_id=skill)
     try:
-        artifact = run_job(job, llm, model=model)
+        artifact = run_job(job, llm, model=model, knowledge=LocalKb())
     except LlmError as e:
         raise _fail(str(e)) from e
 
     artifacts_dir.mkdir(parents=True, exist_ok=True)
     path = artifacts_dir / f"{job.id}.md"
     path.write_text(artifact.markdown, encoding="utf-8")
+    path.with_suffix(".json").write_text(
+        artifact.model_dump_json(indent=2), encoding="utf-8"
+    )
     typer.echo(str(path))

@@ -8,6 +8,7 @@ from fastapi.templating import Jinja2Templates
 
 from misterio.agent import run as run_job
 from misterio.contracts import Job, JobStatus
+from misterio.kb import LocalKb
 from misterio.llm import Llm, LlmError, OpenAiCompatibleLlm, Settings
 from misterio.models import (
     MODEL_OPTIONS,
@@ -28,6 +29,7 @@ def create_app(
     model: str | None = None,
     artifacts_dir: Path = Path("data/artifacts"),
     model_switcher: ModelSwitcher | None = None,
+    knowledge: LocalKb | None = None,
 ) -> FastAPI:
     app = FastAPI(title="Misterio")
     switcher = model_switcher or DockerModelSwitcher(PROJECT_DIR)
@@ -121,7 +123,9 @@ def create_app(
             skill_id=skill,
         )
         try:
-            artifact = run_job(job, active_llm, model=active_model)
+            artifact = run_job(
+                job, active_llm, model=active_model, knowledge=knowledge or LocalKb()
+            )
         except LlmError:
             logger.exception(
                 "LLM generation failed",
@@ -150,6 +154,9 @@ def create_app(
             )
         artifacts_dir.mkdir(parents=True, exist_ok=True)
         (artifacts_dir / f"{job.id}.md").write_text(artifact.markdown, encoding="utf-8")
+        (artifacts_dir / f"{job.id}.json").write_text(
+            artifact.model_dump_json(indent=2), encoding="utf-8"
+        )
         return _page(
             request,
             switcher=switcher,

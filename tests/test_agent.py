@@ -1,7 +1,7 @@
 import pytest
 
 from misterio.agent import run
-from misterio.contracts import Job, JobStatus, LlmCallSpec
+from misterio.contracts import DocumentChunk, Job, JobStatus, LlmCallSpec
 from misterio.llm import FakeLlm
 
 
@@ -83,3 +83,42 @@ def test_run_requires_skill_id() -> None:
     job = Job(id="job-1", status=JobStatus.queued, brief="про трактор")
     with pytest.raises(ValueError):
         run(job, FakeLlm())
+
+
+def test_retrieval_context_is_included_and_diagnostics_are_recorded(
+    tmp_path,
+) -> None:
+    skill_dir = tmp_path / "retrieval"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("Используй контекст", encoding="utf-8")
+    (skill_dir / "manifest.json").write_text(
+        '{"id":"retrieval","version":"1","input_schema":{},'
+        '"output_schema":{},"needs_retrieval":true}',
+        encoding="utf-8",
+    )
+
+    class Knowledge:
+        def search(self, query: str, brand_id: str | None, k: int) -> list:
+            return [
+                DocumentChunk(
+                    text="Проверенный факт",
+                    source="facts.md",
+                    locator="facts.md#0",
+                    score=1,
+                )
+            ]
+
+    llm = CapturingLlm()
+    artifact = run(
+        Job(
+            id="retrieval", status=JobStatus.queued, brief="тема", skill_id="retrieval"
+        ),
+        llm,
+        knowledge=Knowledge(),
+        skills_dir=tmp_path,
+    )
+
+    assert "Проверенный факт" in llm.specs[0].prompt
+    assert "facts.md#0" in llm.specs[0].prompt
+    assert artifact.sources[0].source == "facts.md"
+    assert artifact.diagnostics.candidates[0].text == "fake-llm-output"
