@@ -74,11 +74,14 @@ def test_real_model_chastushki_report(request: pytest.FixtureRequest) -> None:
     cases_path = Path(os.getenv("MISTERIO_EVAL_CASES_PATH", str(CASES_PATH)))
     cases = json.loads(cases_path.read_text(encoding="utf-8"))
     manifest, _ = load_skill("chastushki")
+    candidate_count = int(
+        os.getenv("MISTERIO_EVAL_CANDIDATE_COUNT", str(manifest.candidate_count))
+    )
     parameters = {
         "temperature": manifest.temperature,
         "top_p": manifest.top_p,
         "max_tokens": manifest.max_tokens,
-        "candidate_count": manifest.candidate_count,
+        "candidate_count": candidate_count,
     }
     results = []
     started = perf_counter()
@@ -96,6 +99,7 @@ def test_real_model_chastushki_report(request: pytest.FixtureRequest) -> None:
                     ),
                     llm,
                     model=model,
+                    candidate_count=candidate_count,
                 )
             except LlmError as error:
                 results.append(
@@ -142,6 +146,10 @@ def test_real_model_chastushki_report(request: pytest.FixtureRequest) -> None:
     report_dir = Path(os.getenv("MISTERIO_EVALS_DIR", "data/evals"))
     report_dir.mkdir(parents=True, exist_ok=True)
     filename = model.replace("/", "_").replace(":", "_") + ".json"
+    if candidate_count != manifest.candidate_count:
+        filename = (
+            filename.removesuffix(".json") + f"-candidates-{candidate_count}.json"
+        )
     (report_dir / filename).write_text(
         json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
     )

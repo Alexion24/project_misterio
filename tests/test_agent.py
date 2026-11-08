@@ -39,6 +39,16 @@ VALID_CHASTUSHKI = """По деревне трактор мчится,
 Куры спрятались в тревоге —
 Кот командует двором!"""
 
+WEAK_RHYME = """По деревне трактор мчится,
+Пыль клубится за трубой.
+Петя думал прокатиться —
+Еле выбрался из сада.
+
+Трактор едет по дороге,
+Пыль летит над бугром.
+Куры спрятались в тревоге —
+Кот сидит возле печи!"""
+
 
 def test_run_uses_fake_llm_and_skips_search() -> None:
     job = Job(
@@ -51,7 +61,7 @@ def test_run_uses_fake_llm_and_skips_search() -> None:
     artifact = run(job, llm, knowledge=SpyKnowledge(), model="qwen3:8b")
     assert artifact.markdown == "fake-llm-output"
     assert artifact.sources == []
-    assert job.skill_version == "0.7.0"
+    assert job.skill_version == "0.8.0"
     assert len(llm.specs) == 3
     assert all(spec.temperature == 0.8 for spec in llm.specs[:2])
     assert llm.specs[2].temperature == 0.2
@@ -73,6 +83,51 @@ def test_run_selects_valid_candidate_without_extra_llm_call() -> None:
     assert artifact.markdown == VALID_CHASTUSHKI
     assert len(llm.specs) == 2
     assert artifact.diagnostics.selected_index == 1
+
+
+def test_run_can_compare_four_candidates_for_evaluation() -> None:
+    job = Job(
+        id="job-four-candidates",
+        status=JobStatus.queued,
+        brief="про трактор",
+        skill_id="chastushki",
+    )
+    llm = SequenceLlm(["плохой", WEAK_RHYME, VALID_CHASTUSHKI, "тоже плохой"])
+
+    artifact = run(job, llm, candidate_count=4)
+
+    assert artifact.markdown == VALID_CHASTUSHKI
+    assert len(llm.specs) == 4
+    assert artifact.diagnostics.selected_index == 2
+
+
+def test_run_repairs_low_rhyme_with_specific_issue() -> None:
+    job = Job(
+        id="job-repair",
+        status=JobStatus.queued,
+        brief="про трактор",
+        skill_id="chastushki",
+    )
+    llm = SequenceLlm([WEAK_RHYME, WEAK_RHYME, VALID_CHASTUSHKI])
+
+    artifact = run(job, llm)
+
+    assert artifact.markdown == VALID_CHASTUSHKI
+    assert "строки 2 и 4 в каждой строфе должны рифмоваться" in llm.specs[2].prompt
+
+
+def test_run_keeps_original_when_repair_is_worse() -> None:
+    job = Job(
+        id="job-worse-repair",
+        status=JobStatus.queued,
+        brief="про трактор",
+        skill_id="chastushki",
+    )
+    llm = SequenceLlm([WEAK_RHYME, WEAK_RHYME, "сломанное исправление"])
+
+    artifact = run(job, llm)
+
+    assert artifact.markdown == WEAK_RHYME
 
 
 def test_run_requires_skill_id() -> None:

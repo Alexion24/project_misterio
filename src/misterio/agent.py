@@ -36,6 +36,7 @@ def run(
     knowledge: Knowledge | None = None,
     skills_dir: Path | None = None,
     model: str = "fake",
+    candidate_count: int | None = None,
 ) -> GenerationArtifact:
     if not job.skill_id:
         raise ValueError("job.skill_id is required")
@@ -51,6 +52,9 @@ def run(
     skill_md = (folder / "SKILL.md").read_text(encoding="utf-8")
     context = _source_context(sources)
     prompt = f"{skill_md}\n\nТема пользователя: {job.brief}{context}"
+    count = manifest.candidate_count if candidate_count is None else candidate_count
+    if not 1 <= count <= 6:
+        raise ValueError("candidate_count must be between 1 and 6")
 
     candidates = [
         llm.complete(
@@ -62,7 +66,7 @@ def run(
                 max_tokens=manifest.max_tokens,
             )
         )
-        for _ in range(manifest.candidate_count)
+        for _ in range(count)
     ]
     diagnostics = GenerationDiagnostics()
     text = candidates[0]

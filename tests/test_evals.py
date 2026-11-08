@@ -61,6 +61,32 @@ def test_rhyme_score_prefers_chosen_preference_examples() -> None:
     assert preferred / len(PREFERENCES) >= 0.75
 
 
+def test_rhyme_score_components_on_preference_examples() -> None:
+    from misterio.chastushki import rhyme_score
+
+    configurations = {
+        "tail": {"include_rhythm": False, "include_repetition": False},
+        "tail_and_rhythm": {"include_rhythm": True, "include_repetition": False},
+        "tail_and_repetition": {
+            "include_rhythm": False,
+            "include_repetition": True,
+        },
+        "all": {"include_rhythm": True, "include_repetition": True},
+    }
+    accuracy = {
+        name: sum(
+            rhyme_score(pair["chosen"], **options)
+            > rhyme_score(pair["rejected"], **options)
+            for pair in PREFERENCES
+        )
+        / len(PREFERENCES)
+        for name, options in configurations.items()
+    }
+
+    assert accuracy["all"] >= 0.75
+    assert accuracy["all"] >= accuracy["tail"]
+
+
 @pytest.mark.parametrize(
     "case",
     FIXTURE_CASES,

@@ -49,9 +49,9 @@ flowchart LR
    ошибкой.
 4. Агент добавляет найденные фрагменты с `source` и `locator` в prompt после
    `SKILL.md` и пользовательского brief.
-5. Два кандидата генерируются последовательно, чтобы локальные GPU backends не
+5. По умолчанию два кандидата генерируются последовательно, чтобы локальные GPU backends не
    конкурировали за KV-cache. Агент выбирает их локально по формальным ошибкам и
-   рифме; один repair-вызов выполняется, только если оба кандидата невалидны.
+   рифме; один repair-вызов выполняется, только если все кандидаты невалидны.
 6. `GenerationArtifact` содержит итог, источники и диагностику выбора кандидата.
    CLI и UI сохраняют итог в `<uuid>.md`, а полный артефакт — в `<uuid>.json`.
 
@@ -130,6 +130,7 @@ UI и CLI выполняют генерацию синхронно. Очеред
 ```bash
 MISTERIO_RUN_MODEL_EVALS=1 uv run pytest -m model_eval --model-profile=mistral
 MISTERIO_RUN_MODEL_EVALS=1 uv run pytest -m model_eval --model-profile=mimo
+MISTERIO_RUN_MODEL_EVALS=1 MISTERIO_EVAL_CANDIDATE_COUNT=4 uv run pytest -m model_eval --model-profile=mistral
 ```
 
 Основные команды: `./mist test` и `./mist lint`.

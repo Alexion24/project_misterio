@@ -41,7 +41,9 @@ def format_issues(text: str) -> list[str]:
     return issues
 
 
-def rhyme_score(text: str) -> float:
+def rhyme_score(
+    text: str, *, include_rhythm: bool = True, include_repetition: bool = True
+) -> float:
     stanzas = _stanzas(text)
     if len(stanzas) != 2 or any(len(stanza.splitlines()) != 4 for stanza in stanzas):
         return 0.0
@@ -54,11 +56,11 @@ def rhyme_score(text: str) -> float:
             scores.append(0.0)
             continue
         tail_score = _tail_similarity(_rhyme_tail(left), _rhyme_tail(right))
-        scores.append(
-            tail_score
-            * _rhythm_similarity(lines[1], lines[3])
-            * _repetition_penalty(lines[1], lines[3])
+        rhythm_score = _rhythm_similarity(lines[1], lines[3]) if include_rhythm else 1
+        repetition_score = (
+            _repetition_penalty(lines[1], lines[3]) if include_repetition else 1
         )
+        scores.append(tail_score * rhythm_score * repetition_score)
     return sum(scores) / len(scores)
 
 
