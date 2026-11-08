@@ -71,6 +71,8 @@ def test_real_model_chastushki_report(request: pytest.FixtureRequest) -> None:
     )
     repetitions = int(os.getenv("MISTERIO_EVAL_REPETITIONS", "3"))
     min_pass_rate = float(os.getenv("MISTERIO_EVAL_MIN_PASS_RATE", "0.8"))
+    cases_path = Path(os.getenv("MISTERIO_EVAL_CASES_PATH", str(CASES_PATH)))
+    cases = json.loads(cases_path.read_text(encoding="utf-8"))
     manifest, _ = load_skill("chastushki")
     parameters = {
         "temperature": manifest.temperature,
@@ -80,7 +82,7 @@ def test_real_model_chastushki_report(request: pytest.FixtureRequest) -> None:
     }
     results = []
     started = perf_counter()
-    for case in CASES:
+    for case in cases:
         for repetition in range(1, repetitions + 1):
             brief = case["brief"]
             case_started = perf_counter()
@@ -129,6 +131,7 @@ def test_real_model_chastushki_report(request: pytest.FixtureRequest) -> None:
         "api_style": option.api_style,
         "repetitions": repetitions,
         "min_pass_rate": min_pass_rate,
+        "cases_path": str(cases_path),
         "passed": passed,
         "total": len(results),
         "pass_rate": pass_rate,

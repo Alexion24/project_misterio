@@ -6,8 +6,9 @@
 
 ## Быстрый старт
 
-Нужны Python 3.12+, [uv](https://docs.astral.sh/uv/), Docker с Compose,
-NVIDIA Container Toolkit и Git Bash.
+Для облачного профиля нужны Python 3.12+, [uv](https://docs.astral.sh/uv/) и
+Git Bash. Локальные профили дополнительно требуют Docker с Compose и
+NVIDIA Container Toolkit.
 
 ```bash
 uv sync

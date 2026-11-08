@@ -1,5 +1,31 @@
 import re
 
+_VOWELS = "аеёиоуыэюя"
+_UNSTRESSED_ENDINGS = (
+    "ами",
+    "ями",
+    "ого",
+    "его",
+    "ому",
+    "ему",
+    "ою",
+    "ею",
+    "ая",
+    "яя",
+    "ое",
+    "ее",
+    "ую",
+    "юю",
+    "ые",
+    "ие",
+    "ка",
+    "ку",
+    "ки",
+    "ке",
+    "кой",
+    "ком",
+)
+
 
 def format_issues(text: str) -> list[str]:
     stanzas = _stanzas(text)
@@ -27,18 +53,18 @@ def rhyme_score(text: str) -> float:
         if not left or not right or left == right:
             scores.append(0.0)
             continue
-        common = 0
-        for left_char, right_char in zip(reversed(left), reversed(right), strict=False):
-            if left_char != right_char:
-                break
-            common += 1
-        scores.append(min(common, 4) / 4)
+        tail_score = _tail_similarity(_rhyme_tail(left), _rhyme_tail(right))
+        scores.append(
+            tail_score
+            * _rhythm_similarity(lines[1], lines[3])
+            * _repetition_penalty(lines[1], lines[3])
+        )
     return sum(scores) / len(scores)
 
 
 def quality_issues(text: str) -> list[str]:
     issues = format_issues(text)
-    if not issues and rhyme_score(text) < 0.375:
+    if not issues and rhyme_score(text) <= 0.375:
         issues.append("строки 2 и 4 в каждой строфе должны рифмоваться")
     return issues
 
@@ -49,4 +75,47 @@ def _stanzas(text: str) -> list[str]:
 
 def _last_word(line: str) -> str:
     words = re.findall(r"[а-яё]+", line.casefold())
-    return words[-1].replace("ё", "е") if words else ""
+    return words[-1] if words else ""
+
+
+def _rhyme_tail(word: str) -> str:
+    stress = word.find("ё")
+    if stress < 0:
+        stem_end = len(word)
+        for ending in _UNSTRESSED_ENDINGS:
+            if word.endswith(ending) and len(word) > len(ending):
+                stem_end -= len(ending)
+                break
+        stress = max(
+            (index for index, char in enumerate(word[:stem_end]) if char in _VOWELS),
+            default=-1,
+        )
+        if stress < 0:
+            stress = max(
+                (index for index, char in enumerate(word) if char in _VOWELS),
+                default=0,
+            )
+    return word[stress:].replace("ё", "е")
+
+
+def _tail_similarity(left: str, right: str) -> float:
+    length = max(len(left), len(right))
+    if not length or left[0] != right[0]:
+        return 0.0
+    matches = sum(a == b for a, b in zip(left, right, strict=False))
+    return matches / length
+
+
+def _rhythm_similarity(left: str, right: str) -> float:
+    difference = abs(_syllable_count(left) - _syllable_count(right))
+    return max(0.0, 1 - difference / 6)
+
+
+def _syllable_count(line: str) -> int:
+    return sum(char in _VOWELS for char in line.casefold())
+
+
+def _repetition_penalty(left: str, right: str) -> float:
+    left_words = set(re.findall(r"[а-яё]{4,}", left.casefold()))
+    right_words = set(re.findall(r"[а-яё]{4,}", right.casefold()))
+    return 0.75 if len(left_words & right_words) >= 2 else 1.0
