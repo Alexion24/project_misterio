@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from collections import Counter
 from pathlib import Path
 from time import perf_counter
@@ -16,6 +17,41 @@ from misterio.skills import load_skill
 
 CASES_PATH = Path(__file__).parents[1] / "evals" / "chastushki.json"
 CASES = json.loads(CASES_PATH.read_text(encoding="utf-8"))
+PREFERENCES_PATH = Path(__file__).parents[1] / "evals" / "chastushki_preferences.json"
+PREFERENCES = json.loads(PREFERENCES_PATH.read_text(encoding="utf-8"))
+
+
+def _case_slice(cases: list[dict[str, Any]], offset: int, limit: int) -> list:
+    if offset < 0 or limit < 0:
+        raise ValueError("case offset and limit must be non-negative")
+    return cases[offset : offset + limit if limit else None]
+
+
+def _exclude_prompt_examples(
+    cases: list[dict[str, Any]], skill_md: str
+) -> tuple[list[dict[str, Any]], list[str]]:
+    example_briefs = set(re.findall(r"^Тема:\s*(.+)$", skill_md, re.MULTILINE))
+    excluded = [case["brief"] for case in cases if case["brief"] in example_briefs]
+    return [case for case in cases if case["brief"] not in example_briefs], excluded
+
+
+def _few_shot_addendum(
+    preferences: list[dict[str, Any]], excluded_topics: set[str], count: int
+) -> str:
+    eligible = [
+        pair
+        for pair in preferences
+        if pair["expected_topic"] not in excluded_topics
+        and not pair.get("human_review_notes")
+    ][:count]
+    if len(eligible) != count:
+        raise ValueError(f"requested {count} few-shot pairs, found {len(eligible)}")
+    examples = "\n\n".join(
+        f"Плохой вариант:\n{pair['rejected']}\n\n"
+        f"Исправленный вариант:\n{pair['chosen']}"
+        for pair in eligible
+    )
+    return f"\n\n## Контрастные примеры\n\n{examples}" if examples else ""
 
 
 def _summary(results: list[dict[str, Any]]) -> dict[str, int | float]:
@@ -73,15 +109,31 @@ def test_real_model_chastushki_report(request: pytest.FixtureRequest) -> None:
     min_pass_rate = float(os.getenv("MISTERIO_EVAL_MIN_PASS_RATE", "0.8"))
     cases_path = Path(os.getenv("MISTERIO_EVAL_CASES_PATH", str(CASES_PATH)))
     cases = json.loads(cases_path.read_text(encoding="utf-8"))
-    manifest, _ = load_skill("chastushki")
+    manifest, skill_folder = load_skill("chastushki")
+    skill_md = (skill_folder / "SKILL.md").read_text(encoding="utf-8")
+    cases, excluded_prompt_examples = _exclude_prompt_examples(cases, skill_md)
+    case_offset = int(os.getenv("MISTERIO_EVAL_CASE_OFFSET", "0"))
+    case_limit = int(os.getenv("MISTERIO_EVAL_CASE_LIMIT", "0"))
+    cases = _case_slice(cases, case_offset, case_limit)
     candidate_count = int(
         os.getenv("MISTERIO_EVAL_CANDIDATE_COUNT", str(manifest.candidate_count))
     )
+    temperature = float(
+        os.getenv("MISTERIO_EVAL_TEMPERATURE", str(manifest.temperature))
+    )
+    top_p = float(os.getenv("MISTERIO_EVAL_TOP_P", str(manifest.top_p)))
+    few_shot_count = int(os.getenv("MISTERIO_EVAL_FEW_SHOT_COUNT", "0"))
+    prompt_addendum = _few_shot_addendum(
+        PREFERENCES,
+        {case["expected_topic"] for case in cases},
+        few_shot_count,
+    )
     parameters = {
-        "temperature": manifest.temperature,
-        "top_p": manifest.top_p,
+        "temperature": temperature,
+        "top_p": top_p,
         "max_tokens": manifest.max_tokens,
         "candidate_count": candidate_count,
+        "few_shot_count": few_shot_count,
     }
     results = []
     started = perf_counter()
@@ -100,6 +152,9 @@ def test_real_model_chastushki_report(request: pytest.FixtureRequest) -> None:
                     llm,
                     model=model,
                     candidate_count=candidate_count,
+                    temperature=temperature,
+                    top_p=top_p,
+                    prompt_addendum=prompt_addendum,
                 )
             except LlmError as error:
                 results.append(
@@ -136,6 +191,9 @@ def test_real_model_chastushki_report(request: pytest.FixtureRequest) -> None:
         "repetitions": repetitions,
         "min_pass_rate": min_pass_rate,
         "cases_path": str(cases_path),
+        "excluded_prompt_examples": excluded_prompt_examples,
+        "case_offset": case_offset,
+        "case_limit": case_limit or None,
         "passed": passed,
         "total": len(results),
         "pass_rate": pass_rate,
@@ -150,6 +208,14 @@ def test_real_model_chastushki_report(request: pytest.FixtureRequest) -> None:
         filename = (
             filename.removesuffix(".json") + f"-candidates-{candidate_count}.json"
         )
+    if temperature != manifest.temperature or top_p != manifest.top_p:
+        filename = filename.removesuffix(".json") + (
+            f"-temperature-{temperature:g}-top-p-{top_p:g}.json"
+        )
+    if few_shot_count:
+        filename = filename.removesuffix(".json") + f"-few-shot-{few_shot_count}.json"
+    if case_offset:
+        filename = filename.removesuffix(".json") + f"-offset-{case_offset}.json"
     (report_dir / filename).write_text(
         json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
     )
@@ -219,3 +285,37 @@ def test_eval_summary_handles_no_results() -> None:
         "pass_rate": 0.0,
         "mean_elapsed_s": 0.0,
     }
+
+
+def test_few_shot_addendum_excludes_eval_topics() -> None:
+    preferences = [
+        {"expected_topic": "кот", "rejected": "bad cat", "chosen": "good cat"},
+        {"expected_topic": "пёс", "rejected": "bad dog", "chosen": "good dog"},
+    ]
+
+    addendum = _few_shot_addendum(preferences, {"кот"}, 1)
+
+    assert "good dog" in addendum
+    assert "good cat" not in addendum
+
+
+def test_case_slice_selects_non_overlapping_block() -> None:
+    cases = [{"id": index} for index in range(10)]
+
+    assert _case_slice(cases, offset=5, limit=3) == [
+        {"id": 5},
+        {"id": 6},
+        {"id": 7},
+    ]
+
+
+def test_prompt_examples_are_excluded_from_eval_cases() -> None:
+    cases = [
+        {"brief": "про трактор"},
+        {"brief": "про рыбака"},
+    ]
+
+    filtered, excluded = _exclude_prompt_examples(cases, "Тема: про трактор")
+
+    assert filtered == [{"brief": "про рыбака"}]
+    assert excluded == ["про трактор"]

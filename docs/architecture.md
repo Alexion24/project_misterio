@@ -133,6 +133,17 @@ MISTERIO_RUN_MODEL_EVALS=1 uv run pytest -m model_eval --model-profile=mimo
 MISTERIO_RUN_MODEL_EVALS=1 MISTERIO_EVAL_CANDIDATE_COUNT=4 uv run pytest -m model_eval --model-profile=mistral
 ```
 
+Для малого пробного прогона число тем можно ограничить через
+`MISTERIO_EVAL_CASE_LIMIT`, а начало непересекающегося блока задать через
+`MISTERIO_EVAL_CASE_OFFSET`; по умолчанию используется весь набор.
+Темы, которые уже показаны модели в примерах `SKILL.md`, автоматически
+исключаются из model-eval до применения offset и limit.
+`MISTERIO_EVAL_TEMPERATURE` и `MISTERIO_EVAL_TOP_P` переопределяют
+параметры только для model-eval; отчёты с нестандартными значениями
+получают отдельные имена файлов.
+`MISTERIO_EVAL_FEW_SHOT_COUNT` добавляет только в model-eval указанное
+число проверенных контрастных пар, исключая темы текущей eval-выборки.
+
 Основные команды: `./mist test` и `./mist lint`.
 
 ## Границы проекта

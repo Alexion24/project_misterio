@@ -61,7 +61,7 @@ def test_run_uses_fake_llm_and_skips_search() -> None:
     artifact = run(job, llm, knowledge=SpyKnowledge(), model="qwen3:8b")
     assert artifact.markdown == "fake-llm-output"
     assert artifact.sources == []
-    assert job.skill_version == "0.8.0"
+    assert job.skill_version == "0.9.0"
     assert len(llm.specs) == 3
     assert all(spec.temperature == 0.8 for spec in llm.specs[:2])
     assert llm.specs[2].temperature == 0.2
@@ -94,10 +94,20 @@ def test_run_can_compare_four_candidates_for_evaluation() -> None:
     )
     llm = SequenceLlm(["плохой", WEAK_RHYME, VALID_CHASTUSHKI, "тоже плохой"])
 
-    artifact = run(job, llm, candidate_count=4)
+    artifact = run(
+        job,
+        llm,
+        candidate_count=4,
+        temperature=0.6,
+        top_p=0.9,
+        prompt_addendum="\n\nЭкспериментальный пример",
+    )
 
     assert artifact.markdown == VALID_CHASTUSHKI
     assert len(llm.specs) == 4
+    assert all(spec.temperature == 0.6 for spec in llm.specs)
+    assert all(spec.top_p == 0.9 for spec in llm.specs)
+    assert all("Экспериментальный пример" in spec.prompt for spec in llm.specs)
     assert artifact.diagnostics.selected_index == 2
 
 

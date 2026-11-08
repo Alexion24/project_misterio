@@ -37,6 +37,9 @@ def run(
     skills_dir: Path | None = None,
     model: str = "fake",
     candidate_count: int | None = None,
+    temperature: float | None = None,
+    top_p: float | None = None,
+    prompt_addendum: str = "",
 ) -> GenerationArtifact:
     if not job.skill_id:
         raise ValueError("job.skill_id is required")
@@ -51,8 +54,12 @@ def run(
 
     skill_md = (folder / "SKILL.md").read_text(encoding="utf-8")
     context = _source_context(sources)
-    prompt = f"{skill_md}\n\nТема пользователя: {job.brief}{context}"
+    prompt = f"{skill_md}{prompt_addendum}\n\nТема пользователя: {job.brief}{context}"
     count = manifest.candidate_count if candidate_count is None else candidate_count
+    generation_temperature = (
+        manifest.temperature if temperature is None else temperature
+    )
+    generation_top_p = manifest.top_p if top_p is None else top_p
     if not 1 <= count <= 6:
         raise ValueError("candidate_count must be between 1 and 6")
 
@@ -61,8 +68,8 @@ def run(
             LlmCallSpec(
                 model=model,
                 prompt=prompt,
-                temperature=manifest.temperature,
-                top_p=manifest.top_p,
+                temperature=generation_temperature,
+                top_p=generation_top_p,
                 max_tokens=manifest.max_tokens,
             )
         )
