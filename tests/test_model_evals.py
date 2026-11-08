@@ -1,7 +1,9 @@
 import json
 import os
+from collections import Counter
 from pathlib import Path
 from time import perf_counter
+from typing import Any
 
 import pytest
 
@@ -10,9 +12,49 @@ from misterio.chastushki import quality_issues
 from misterio.contracts import Job, JobStatus
 from misterio.llm import LlmError
 from misterio.models import MODEL_OPTIONS, create_llm
+from misterio.skills import load_skill
 
 CASES_PATH = Path(__file__).parents[1] / "evals" / "chastushki.json"
 CASES = json.loads(CASES_PATH.read_text(encoding="utf-8"))
+
+
+def _summary(results: list[dict[str, Any]]) -> dict[str, int | float]:
+    passed = sum(result["passed"] for result in results)
+    total = len(results)
+    return {
+        "passed": passed,
+        "total": total,
+        "pass_rate": passed / total if total else 0.0,
+        "mean_elapsed_s": (
+            round(sum(result["elapsed_s"] for result in results) / total, 3)
+            if total
+            else 0.0
+        ),
+    }
+
+
+def _aggregates(
+    results: list[dict[str, Any]], model: str, parameters: dict[str, Any]
+) -> dict[str, Any]:
+    by_topic: dict[str, list[dict[str, Any]]] = {}
+    error_types: Counter[str] = Counter()
+    for result in results:
+        by_topic.setdefault(result["brief"], []).append(result)
+        if result.get("error"):
+            error_types["request_error"] += 1
+        if result.get("topic_present") is False:
+            error_types["topic_missing"] += 1
+        error_types.update(result.get("quality_issues", []))
+
+    summary = _summary(results)
+    return {
+        "by_model": {model: summary},
+        "by_parameters": [{"parameters": parameters, **summary}],
+        "by_topic": {
+            topic: _summary(topic_results) for topic, topic_results in by_topic.items()
+        },
+        "by_error_type": dict(sorted(error_types.items())),
+    }
 
 
 @pytest.mark.model_eval
@@ -29,6 +71,13 @@ def test_real_model_chastushki_report(request: pytest.FixtureRequest) -> None:
     )
     repetitions = int(os.getenv("MISTERIO_EVAL_REPETITIONS", "3"))
     min_pass_rate = float(os.getenv("MISTERIO_EVAL_MIN_PASS_RATE", "0.8"))
+    manifest, _ = load_skill("chastushki")
+    parameters = {
+        "temperature": manifest.temperature,
+        "top_p": manifest.top_p,
+        "max_tokens": manifest.max_tokens,
+        "candidate_count": manifest.candidate_count,
+    }
     results = []
     started = perf_counter()
     for case in CASES:
@@ -84,6 +133,7 @@ def test_real_model_chastushki_report(request: pytest.FixtureRequest) -> None:
         "total": len(results),
         "pass_rate": pass_rate,
         "elapsed_s": round(perf_counter() - started, 3),
+        "aggregates": _aggregates(results, model, parameters),
         "cases": results,
     }
     report_dir = Path(os.getenv("MISTERIO_EVALS_DIR", "data/evals"))
@@ -94,3 +144,67 @@ def test_real_model_chastushki_report(request: pytest.FixtureRequest) -> None:
     )
 
     assert pass_rate >= min_pass_rate
+
+
+def test_eval_aggregates_group_results_and_error_types() -> None:
+    results = [
+        {
+            "brief": "про трактор",
+            "passed": True,
+            "quality_issues": [],
+            "topic_present": True,
+            "elapsed_s": 1.0,
+        },
+        {
+            "brief": "про трактор",
+            "passed": False,
+            "quality_issues": ["weak rhyme"],
+            "topic_present": False,
+            "elapsed_s": 3.0,
+        },
+        {
+            "brief": "про кота",
+            "passed": False,
+            "error": "timeout",
+            "elapsed_s": 2.0,
+        },
+    ]
+    parameters = {"temperature": 0.8, "candidate_count": 2}
+
+    aggregates = _aggregates(results, "cloud-model", parameters)
+
+    assert aggregates["by_model"]["cloud-model"] == {
+        "passed": 1,
+        "total": 3,
+        "pass_rate": 1 / 3,
+        "mean_elapsed_s": 2.0,
+    }
+    assert aggregates["by_parameters"] == [
+        {
+            "parameters": parameters,
+            "passed": 1,
+            "total": 3,
+            "pass_rate": 1 / 3,
+            "mean_elapsed_s": 2.0,
+        }
+    ]
+    assert aggregates["by_topic"]["про трактор"] == {
+        "passed": 1,
+        "total": 2,
+        "pass_rate": 0.5,
+        "mean_elapsed_s": 2.0,
+    }
+    assert aggregates["by_error_type"] == {
+        "request_error": 1,
+        "topic_missing": 1,
+        "weak rhyme": 1,
+    }
+
+
+def test_eval_summary_handles_no_results() -> None:
+    assert _summary([]) == {
+        "passed": 0,
+        "total": 0,
+        "pass_rate": 0.0,
+        "mean_elapsed_s": 0.0,
+    }

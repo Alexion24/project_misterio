@@ -9,8 +9,6 @@ def format_issues(text: str) -> list[str]:
         issues.append(f"нужно 2 строфы, получено {len(stanzas)}")
     if any(len(stanza.splitlines()) != 4 for stanza in stanzas):
         issues.append("в каждой строфе должно быть 4 строки")
-    if any(not 3 <= len(re.findall(r"[\wёЁ-]+", line)) <= 7 for line in lines):
-        issues.append("в каждой строке должно быть 3–7 слов")
     normalized = [re.sub(r"\W", "", line.casefold()) for line in lines]
     if len(normalized) != len(set(normalized)):
         issues.append("строки не должны повторяться")

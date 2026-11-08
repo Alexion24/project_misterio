@@ -29,6 +29,15 @@ def test_format_issues_accepts_two_quatrains() -> None:
     assert format_issues(GOOD_RHYME) == []
 
 
+def test_format_issues_allows_natural_lines_outside_word_count_guide() -> None:
+    varied_lines = GOOD_RHYME.replace(
+        "По деревне трактор мчится,",
+        "По нашей деревне старый трактор быстро к станции мчится,",
+    )
+
+    assert format_issues(varied_lines) == []
+
+
 def test_rhyme_score_prefers_matching_endings() -> None:
     assert rhyme_score(GOOD_RHYME) > rhyme_score(BAD_RHYME)
 

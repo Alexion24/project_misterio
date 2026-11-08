@@ -51,7 +51,7 @@ def test_run_uses_fake_llm_and_skips_search() -> None:
     artifact = run(job, llm, knowledge=SpyKnowledge(), model="qwen3:8b")
     assert artifact.markdown == "fake-llm-output"
     assert artifact.sources == []
-    assert job.skill_version == "0.6.0"
+    assert job.skill_version == "0.7.0"
     assert len(llm.specs) == 3
     assert all(spec.temperature == 0.8 for spec in llm.specs[:2])
     assert llm.specs[2].temperature == 0.2

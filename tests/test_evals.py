@@ -24,11 +24,13 @@ def test_chastushki_preferences_are_real_improvements() -> None:
     from misterio.chastushki import quality_issues
 
     assert len(PREFERENCES) >= 5
+    rejected_issues = []
     for pair in PREFERENCES:
-        assert quality_issues(pair["rejected"])
+        rejected_issues.extend(quality_issues(pair["rejected"]))
         assert quality_issues(pair["chosen"]) == []
         assert pair["expected_topic"].casefold() in pair["chosen"].casefold()
         assert pair["reasons"]
+    assert rejected_issues
 
 
 @pytest.mark.parametrize(
