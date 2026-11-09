@@ -5,7 +5,13 @@ import pytest
 from pytest_httpx import HTTPXMock
 
 from misterio.contracts import LlmCallSpec
-from misterio.llm import FakeLlm, LlmConfig, LlmError, OpenAiCompatibleLlm
+from misterio.llm import (
+    FakeLlm,
+    LlmConfig,
+    LlmError,
+    LlmTimeoutError,
+    OpenAiCompatibleLlm,
+)
 
 
 def _llm() -> OpenAiCompatibleLlm:
@@ -83,6 +89,19 @@ def test_connection_error_becomes_llm_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_exception(httpx.ConnectError("refused"))
     with pytest.raises(LlmError):
         _llm().complete(_spec())
+
+
+@pytest.mark.parametrize("timeout_type", [httpx.ConnectTimeout, httpx.ReadTimeout])
+def test_timeout_becomes_llm_timeout_error(
+    httpx_mock: HTTPXMock, timeout_type: type[httpx.TimeoutException]
+) -> None:
+    timeout = timeout_type("provider details")
+    httpx_mock.add_exception(timeout)
+
+    with pytest.raises(LlmTimeoutError, match="Истекло время ожидания") as error:
+        _llm().complete(_spec())
+
+    assert error.value.__cause__ is timeout
 
 
 def test_malformed_response_becomes_llm_error(httpx_mock: HTTPXMock) -> None:

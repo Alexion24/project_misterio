@@ -1,0 +1,882 @@
+[
+  {
+    "id": "deepseek-case-01-a",
+    "topic_id": "case-01",
+    "brief": "про киномеханика, перепутавшего начало и конец фильма",
+    "split": "development",
+    "text": "Киномеханик наш Семён\nНынче в зале сплоховал:\nОн конец включил первым,\nА начало — не сыскал!\n\nЗритель в зале засвистел,\nХохотал до слёз народ.\nА Семён в будке вспотел —\nКрутит плёнку наоборот!",
+    "usable": false,
+    "formal_pass": true,
+    "prosody_review_status": "confirmed",
+    "endings": {
+      "2": {
+        "word": "сплоховал",
+        "draft_stress": "сплохова́л",
+        "confirmed_stress": "сплохова́л"
+      },
+      "4": {
+        "word": "сыскал",
+        "draft_stress": "сыска́л",
+        "confirmed_stress": "сыска́л"
+      },
+      "6": {
+        "word": "народ",
+        "draft_stress": "наро́д",
+        "confirmed_stress": "наро́д"
+      },
+      "8": {
+        "word": "наоборот",
+        "draft_stress": "наоборо́т",
+        "confirmed_stress": "наоборо́т"
+      }
+    },
+    "stanza_reviews": [
+      {
+        "rhythm": "awkward",
+        "rhyme": "weak",
+        "note": ""
+      },
+      {
+        "rhythm": "awkward",
+        "rhyme": "none",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "id": "deepseek-case-01-b",
+    "topic_id": "case-01",
+    "brief": "про киномеханика, перепутавшего начало и конец фильма",
+    "split": "development",
+    "text": "Киномеханик Петров в зале\nНочь крутил кино.\nВсе герои вдруг сбежали —\nКончилось оно!\n\nОн плёнку вставил не с начала,\nА с финальных сцен.\nЗал кричал, а он в ответ:\n«Так задумал режиссер!»",
+    "usable": false,
+    "formal_pass": true,
+    "prosody_review_status": "confirmed",
+    "endings": {
+      "2": {
+        "word": "кино",
+        "draft_stress": "кино́",
+        "confirmed_stress": "кино́"
+      },
+      "4": {
+        "word": "оно",
+        "draft_stress": "оно́",
+        "confirmed_stress": "оно́"
+      },
+      "6": {
+        "word": "сцен",
+        "draft_stress": "сцен",
+        "confirmed_stress": "сцен"
+      },
+      "8": {
+        "word": "режиссер",
+        "draft_stress": "режиссёр",
+        "confirmed_stress": "режиссёр"
+      }
+    },
+    "stanza_reviews": [
+      {
+        "rhythm": "natural",
+        "rhyme": "good",
+        "note": ""
+      },
+      {
+        "rhythm": "awkward",
+        "rhyme": "none",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "id": "deepseek-case-02-a",
+    "topic_id": "case-02",
+    "brief": "про козу, утащившую носок с верёвки",
+    "split": "holdout",
+    "text": "Вот коза пошла гулять,\nСтала носочки собирать.\nС верёвки белый утащила —\nБабка ахнула: «Вот сила!»\n\nУ козы в зубах носок,\nОна бежит наискосок.\nДед кричит: «Куда, плутовка?» —\nА она жуёт сноровко!",
+    "usable": false,
+    "formal_pass": true,
+    "prosody_review_status": "confirmed",
+    "endings": {
+      "2": {
+        "word": "собирать",
+        "draft_stress": "собира́ть",
+        "confirmed_stress": "собира́ть"
+      },
+      "4": {
+        "word": "сила",
+        "draft_stress": "си́ла",
+        "confirmed_stress": "си́ла"
+      },
+      "6": {
+        "word": "наискосок",
+        "draft_stress": "наискосо́к",
+        "confirmed_stress": "наискосо́к"
+      },
+      "8": {
+        "word": "сноровко",
+        "draft_stress": "сно́ровко",
+        "confirmed_stress": "сно́ровко"
+      }
+    },
+    "stanza_reviews": [
+      {
+        "rhythm": "awkward",
+        "rhyme": "none",
+        "note": ""
+      },
+      {
+        "rhythm": "awkward",
+        "rhyme": "none",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "id": "deepseek-case-02-b",
+    "topic_id": "case-02",
+    "brief": "про козу, утащившую носок с верёвки",
+    "split": "holdout",
+    "text": "Вот коза во двор зашла,\nХодит важно, как барыня.\nС верёвки мой носок сняла —\nВот такая оказия!\n\nБабка ахнула в окно:\n«Караул, разбойница!»\nА коза уже давно\nВ том носке красуется!",
+    "usable": false,
+    "formal_pass": true,
+    "prosody_review_status": "confirmed",
+    "endings": {
+      "2": {
+        "word": "барыня",
+        "draft_stress": "ба́рыня",
+        "confirmed_stress": "ба́рыня"
+      },
+      "4": {
+        "word": "оказия",
+        "draft_stress": "ока́зия",
+        "confirmed_stress": "ока́зия"
+      },
+      "6": {
+        "word": "разбойница",
+        "draft_stress": "разбо́йница",
+        "confirmed_stress": "разбо́йница"
+      },
+      "8": {
+        "word": "красуется",
+        "draft_stress": "красу́ется",
+        "confirmed_stress": "красу́ется"
+      }
+    },
+    "stanza_reviews": [
+      {
+        "rhythm": "awkward",
+        "rhyme": "none",
+        "note": ""
+      },
+      {
+        "rhythm": "natural",
+        "rhyme": "good",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "id": "deepseek-case-03-a",
+    "topic_id": "case-03",
+    "brief": "про кондуктора, у которого компостер зажевал билет",
+    "split": "development",
+    "text": "Я по салону иду смело,\nВсем билеты раздаю.\nМой компостер — это дело!\nЗажевал билет — стою.\n\nПассажир кричит: «Помогите!»\nА компостер знай жуёт.\nВы билетик не трясите —\nОн добавку не берёт!",
+    "usable": true,
+    "formal_pass": true,
+    "prosody_review_status": "confirmed",
+    "endings": {
+      "2": {
+        "word": "раздаю",
+        "draft_stress": "раздаю́",
+        "confirmed_stress": "раздаю́"
+      },
+      "4": {
+        "word": "стою",
+        "draft_stress": "стою́",
+        "confirmed_stress": "стою́"
+      },
+      "6": {
+        "word": "жуёт",
+        "draft_stress": "жуёт",
+        "confirmed_stress": "жуёт"
+      },
+      "8": {
+        "word": "берёт",
+        "draft_stress": "берёт",
+        "confirmed_stress": "берёт"
+      }
+    },
+    "stanza_reviews": [
+      {
+        "rhythm": "natural",
+        "rhyme": "weak",
+        "note": ""
+      },
+      {
+        "rhythm": "natural",
+        "rhyme": "weak",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "id": "deepseek-case-03-b",
+    "topic_id": "case-03",
+    "brief": "про кондуктора, у которого компостер зажевал билет",
+    "split": "development",
+    "text": "Я по салону иду смело,\nВсем билеты раздаю.\nА компостер — вот же дело! —\nПроглотил билет в бою.\n\nПассажир кричит: «Спасите!»\nЯ стучу по корпусу.\nТот билет достал — глядите! —\nВесь в дырочках, как сито!",
+    "usable": false,
+    "formal_pass": true,
+    "prosody_review_status": "confirmed",
+    "endings": {
+      "2": {
+        "word": "раздаю",
+        "draft_stress": "раздаю́",
+        "confirmed_stress": "раздаю́"
+      },
+      "4": {
+        "word": "бою",
+        "draft_stress": "бою́",
+        "confirmed_stress": "бою́"
+      },
+      "6": {
+        "word": "корпусу",
+        "draft_stress": "ко́рпусу",
+        "confirmed_stress": "ко́рпусу"
+      },
+      "8": {
+        "word": "сито",
+        "draft_stress": "си́то",
+        "confirmed_stress": "си́то"
+      }
+    },
+    "stanza_reviews": [
+      {
+        "rhythm": "awkward",
+        "rhyme": "good",
+        "note": ""
+      },
+      {
+        "rhythm": "awkward",
+        "rhyme": "none",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "id": "deepseek-case-04-a",
+    "topic_id": "case-04",
+    "brief": "про лыжника, который съехал в сугроб у финиша",
+    "split": "development",
+    "text": "Лыжник палки в руки взял,\nВсё летел к финишу.\nРазогнался — и нырнул\nПрямо в снежну крышу!\n\nИз сугроба торчит нос,\nЛыжи вверх торчат.\nДед Морозу он сказал:\n«Я к тебе в отряд!»",
+    "usable": false,
+    "formal_pass": true,
+    "prosody_review_status": "confirmed",
+    "endings": {
+      "2": {
+        "word": "финишу",
+        "draft_stress": "фи́нишу",
+        "confirmed_stress": "фи́нишу"
+      },
+      "4": {
+        "word": "крышу",
+        "draft_stress": "кры́шу",
+        "confirmed_stress": "кры́шу"
+      },
+      "6": {
+        "word": "торчат",
+        "draft_stress": "торча́т",
+        "confirmed_stress": "торча́т"
+      },
+      "8": {
+        "word": "отряд",
+        "draft_stress": "отря́д",
+        "confirmed_stress": "отря́д"
+      }
+    },
+    "stanza_reviews": [
+      {
+        "rhythm": "awkward",
+        "rhyme": "none",
+        "note": ""
+      },
+      {
+        "rhythm": "awkward",
+        "rhyme": "weak",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "id": "deepseek-case-04-b",
+    "topic_id": "case-04",
+    "brief": "про лыжника, который съехал в сугроб у финиша",
+    "split": "development",
+    "text": "Лыжник палки в руки взял,\nВ шапке и перчатках.\nРазогнался — и упал\nВ снег у финиш-палатки.\n\nФиниш рядышком блестит,\nА сугроб смеётся.\nЛыжник из снежка торчит —\nВесело живётся!",
+    "usable": true,
+    "formal_pass": true,
+    "prosody_review_status": "confirmed",
+    "endings": {
+      "2": {
+        "word": "перчатках",
+        "draft_stress": "перча́тках",
+        "confirmed_stress": "перча́тках"
+      },
+      "4": {
+        "word": "палатки",
+        "draft_stress": "пала́тки",
+        "confirmed_stress": "пала́тки"
+      },
+      "6": {
+        "word": "смеётся",
+        "draft_stress": "смеётся",
+        "confirmed_stress": "смеётся"
+      },
+      "8": {
+        "word": "живётся",
+        "draft_stress": "живётся",
+        "confirmed_stress": "живётся"
+      }
+    },
+    "stanza_reviews": [
+      {
+        "rhythm": "awkward",
+        "rhyme": "weak",
+        "note": ""
+      },
+      {
+        "rhythm": "natural",
+        "rhyme": "good",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "id": "deepseek-case-05-a",
+    "topic_id": "case-05",
+    "brief": "про семью, собравшую палатку задом наперёд",
+    "split": "holdout",
+    "text": "Всей семьёй в поход собрались,\nВзяли лес, реку и дождь.\nПалатку ставили, старались —\nПолучился домик-ёж!\n\nПапа колышки вбивал,\nМама вход искала.\nПёс в палатке заночевал —\nДверь наружу стала!",
+    "usable": false,
+    "formal_pass": true,
+    "prosody_review_status": "confirmed",
+    "endings": {
+      "2": {
+        "word": "дождь",
+        "draft_stress": "дождь",
+        "confirmed_stress": "дождь"
+      },
+      "4": {
+        "word": "ёж",
+        "draft_stress": "ёж",
+        "confirmed_stress": "ёж"
+      },
+      "6": {
+        "word": "искала",
+        "draft_stress": "иска́ла",
+        "confirmed_stress": "иска́ла"
+      },
+      "8": {
+        "word": "стала",
+        "draft_stress": "ста́ла",
+        "confirmed_stress": "ста́ла"
+      }
+    },
+    "stanza_reviews": [
+      {
+        "rhythm": "awkward",
+        "rhyme": "good",
+        "note": ""
+      },
+      {
+        "rhythm": "awkward",
+        "rhyme": "weak",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "id": "deepseek-case-05-b",
+    "topic_id": "case-05",
+    "brief": "про семью, собравшую палатку задом наперёд",
+    "split": "holdout",
+    "text": "Папа с мамой увлечённо\nСтавят палатку у реки.\nВход снаружи оказался —\nВнутрь не влезут рюкзаки!\n\nМы смеялись всей семьёй,\nДед сказал: «Ну и дела!»\nПалатка дышит к нам спиной,\nЗато уютно, как всегда!",
+    "usable": true,
+    "formal_pass": true,
+    "prosody_review_status": "confirmed",
+    "endings": {
+      "2": {
+        "word": "реки",
+        "draft_stress": "реки́",
+        "confirmed_stress": "реки́"
+      },
+      "4": {
+        "word": "рюкзаки",
+        "draft_stress": "рюкзаки́",
+        "confirmed_stress": "рюкзаки́"
+      },
+      "6": {
+        "word": "дела",
+        "draft_stress": "дела́",
+        "confirmed_stress": "дела́"
+      },
+      "8": {
+        "word": "всегда",
+        "draft_stress": "всегда́",
+        "confirmed_stress": "всегда́"
+      }
+    },
+    "stanza_reviews": [
+      {
+        "rhythm": "natural",
+        "rhyme": "good",
+        "note": ""
+      },
+      {
+        "rhythm": "awkward",
+        "rhyme": "good",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "id": "deepseek-case-06-a",
+    "topic_id": "case-06",
+    "brief": "про сырника, прилипшего к сковородке",
+    "split": "development",
+    "text": "Сырник с маслом подрумянил\nОба бока до корочки.\nА потом к сковороде\nПрилип, как будто корочка!\n\nЯ лопаткой подцепила —\nОн ни с места, вот беда!\nСырник мой заупрямился,\nКак приклеен навсегда!",
+    "usable": false,
+    "formal_pass": true,
+    "prosody_review_status": "confirmed",
+    "endings": {
+      "2": {
+        "word": "корочки",
+        "draft_stress": "ко́рочки",
+        "confirmed_stress": "ко́рочки"
+      },
+      "4": {
+        "word": "корочка",
+        "draft_stress": "ко́рочка",
+        "confirmed_stress": "ко́рочка"
+      },
+      "6": {
+        "word": "беда",
+        "draft_stress": "беда́",
+        "confirmed_stress": "беда́"
+      },
+      "8": {
+        "word": "навсегда",
+        "draft_stress": "навсегда́",
+        "confirmed_stress": "навсегда́"
+      }
+    },
+    "stanza_reviews": [
+      {
+        "rhythm": "awkward",
+        "rhyme": "none",
+        "note": ""
+      },
+      {
+        "rhythm": "awkward",
+        "rhyme": "none",
+        "note": "тут дело в 7 строке"
+      }
+    ]
+  },
+  {
+    "id": "deepseek-case-06-b",
+    "topic_id": "case-06",
+    "brief": "про сырника, прилипшего к сковородке",
+    "split": "development",
+    "text": "Сырник с маслом подрумянился,\nЛежит, как будто на посту.\nЯ лопаткой ковыряю —\nОн прилип, как банк к мосту!\n\nСырник мой к сковородке\nПрирос, как медведь к малине.\nЯ его перевернуть —\nА он скачет, как на пружине!",
+    "usable": false,
+    "formal_pass": true,
+    "prosody_review_status": "confirmed",
+    "endings": {
+      "2": {
+        "word": "посту",
+        "draft_stress": "посту́",
+        "confirmed_stress": "посту́"
+      },
+      "4": {
+        "word": "мосту",
+        "draft_stress": "мосту́",
+        "confirmed_stress": "мосту́"
+      },
+      "6": {
+        "word": "малине",
+        "draft_stress": "мали́не",
+        "confirmed_stress": "мали́не"
+      },
+      "8": {
+        "word": "пружине",
+        "draft_stress": "пружи́не",
+        "confirmed_stress": "пружи́не"
+      }
+    },
+    "stanza_reviews": [
+      {
+        "rhythm": "awkward",
+        "rhyme": "weak",
+        "note": ""
+      },
+      {
+        "rhythm": "awkward",
+        "rhyme": "weak",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "id": "deepseek-case-07-a",
+    "topic_id": "case-07",
+    "brief": "про термос, в котором на морозе остыл чай",
+    "split": "holdout",
+    "text": "Термос новенький блестит,\nЯ налил в него заварку.\nНа морозе чай остыл —\nВот такую мне подарочку!\n\nЯ на лыжах в лес пошёл,\nТермос в рюкзаке ношу.\nОткрываю — лёд и снег,\nЛучше б взял я колбасу!",
+    "usable": false,
+    "formal_pass": true,
+    "prosody_review_status": "confirmed",
+    "endings": {
+      "2": {
+        "word": "заварку",
+        "draft_stress": "зава́рку",
+        "confirmed_stress": "зава́рку"
+      },
+      "4": {
+        "word": "подарочку",
+        "draft_stress": "пода́рочку",
+        "confirmed_stress": "пода́рочку"
+      },
+      "6": {
+        "word": "ношу",
+        "draft_stress": "ношу́",
+        "confirmed_stress": "ношу́"
+      },
+      "8": {
+        "word": "колбасу",
+        "draft_stress": "колбасу́",
+        "confirmed_stress": "колбасу́"
+      }
+    },
+    "stanza_reviews": [
+      {
+        "rhythm": "awkward",
+        "rhyme": "none",
+        "note": ""
+      },
+      {
+        "rhythm": "natural",
+        "rhyme": "good",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "id": "deepseek-case-07-b",
+    "topic_id": "case-07",
+    "brief": "про термос, в котором на морозе остыл чай",
+    "split": "holdout",
+    "text": "Термос новенький блестит,\nЯ налил в него заварку.\nНа морозе чай остыл —\nВот такая вот накладка!\n\nЯ на лыжах в лес бегу,\nТермос в рюкзаке трясётся.\nОткрываю — лёд внутри,\nНадо мной снегирь смеётся!",
+    "usable": true,
+    "formal_pass": true,
+    "prosody_review_status": "confirmed",
+    "endings": {
+      "2": {
+        "word": "заварку",
+        "draft_stress": "зава́рку",
+        "confirmed_stress": "зава́рку"
+      },
+      "4": {
+        "word": "накладка",
+        "draft_stress": "накла́дка",
+        "confirmed_stress": "накла́дка"
+      },
+      "6": {
+        "word": "трясётся",
+        "draft_stress": "трясётся",
+        "confirmed_stress": "трясётся"
+      },
+      "8": {
+        "word": "смеётся",
+        "draft_stress": "смеётся",
+        "confirmed_stress": "смеётся"
+      }
+    },
+    "stanza_reviews": [
+      {
+        "rhythm": "natural",
+        "rhyme": "good",
+        "note": ""
+      },
+      {
+        "rhythm": "natural",
+        "rhyme": "good",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "id": "deepseek-case-08-a",
+    "topic_id": "case-08",
+    "brief": "про умный холодильник",
+    "split": "development",
+    "text": "Умный холодильник мой\nСам заказывает сливки.\nЯ ему: «Постой, постой!» —\nОн морозит мне оливки.\n\nОн мигает огоньком,\nПишет: «Творог скоро скиснет!»\nЯ с испугу съел его —\nВот такой вот умный витязь!",
+    "usable": false,
+    "formal_pass": true,
+    "prosody_review_status": "confirmed",
+    "endings": {
+      "2": {
+        "word": "сливки",
+        "draft_stress": "сли́вки",
+        "confirmed_stress": "сли́вки"
+      },
+      "4": {
+        "word": "оливки",
+        "draft_stress": "оли́вки",
+        "confirmed_stress": "оли́вки"
+      },
+      "6": {
+        "word": "скиснет",
+        "draft_stress": "ски́снет",
+        "confirmed_stress": "ски́снет"
+      },
+      "8": {
+        "word": "витязь",
+        "draft_stress": "ви́тязь",
+        "confirmed_stress": "ви́тязь"
+      }
+    },
+    "stanza_reviews": [
+      {
+        "rhythm": "natural",
+        "rhyme": "good",
+        "note": ""
+      },
+      {
+        "rhythm": "awkward",
+        "rhyme": "none",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "id": "deepseek-case-08-b",
+    "topic_id": "case-08",
+    "brief": "про умный холодильник",
+    "split": "development",
+    "text": "Умный холодильник мой\nСам заказывает еду.\nЯ ему: «Постой, постой!» —\nОн уже завёл беседу.\n\nОн мигает и гудит,\nЛюбит с полки всё считать.\nА как свет в квартире гаснет —\nНачинает он икать!",
+    "usable": true,
+    "formal_pass": true,
+    "prosody_review_status": "confirmed",
+    "endings": {
+      "2": {
+        "word": "еду",
+        "draft_stress": "еду́",
+        "confirmed_stress": "еду́"
+      },
+      "4": {
+        "word": "беседу",
+        "draft_stress": "бесе́ду",
+        "confirmed_stress": "бесе́ду"
+      },
+      "6": {
+        "word": "считать",
+        "draft_stress": "счита́ть",
+        "confirmed_stress": "счита́ть"
+      },
+      "8": {
+        "word": "икать",
+        "draft_stress": "ика́ть",
+        "confirmed_stress": "ика́ть"
+      }
+    },
+    "stanza_reviews": [
+      {
+        "rhythm": "natural",
+        "rhyme": "none",
+        "note": "Если не ставить ударение в слове еду на букву Е, то всё теряется"
+      },
+      {
+        "rhythm": "natural",
+        "rhyme": "good",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "id": "deepseek-case-09-a",
+    "topic_id": "case-09",
+    "brief": "про шахматиста, потерявшего ферзя",
+    "split": "holdout",
+    "text": "За доской сидел весь день,\nДумал, как спасти ферзя.\nА ферзя унёс сосед —\nОн играет без стыда!\n\nПешка двинулась вперёд,\nКоролеву не нашла.\nОбъявила шах и мат —\nВот такие вот дела!",
+    "usable": true,
+    "formal_pass": true,
+    "prosody_review_status": "confirmed",
+    "endings": {
+      "2": {
+        "word": "ферзя",
+        "draft_stress": "ферзя́",
+        "confirmed_stress": "ферзя́"
+      },
+      "4": {
+        "word": "стыда",
+        "draft_stress": "стыда́",
+        "confirmed_stress": "стыда́"
+      },
+      "6": {
+        "word": "нашла",
+        "draft_stress": "нашла́",
+        "confirmed_stress": "нашла́"
+      },
+      "8": {
+        "word": "дела",
+        "draft_stress": "дела́",
+        "confirmed_stress": "дела́"
+      }
+    },
+    "stanza_reviews": [
+      {
+        "rhythm": "natural",
+        "rhyme": "weak",
+        "note": ""
+      },
+      {
+        "rhythm": "natural",
+        "rhyme": "good",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "id": "deepseek-case-09-b",
+    "topic_id": "case-09",
+    "brief": "про шахматиста, потерявшего ферзя",
+    "split": "holdout",
+    "text": "На доске ферзь стоял в углу,\nГрозно так смотрел на всех.\nЯ его в карман смахнул —\nВот и весь мой ход-успех!\n\nСоперник ищет ферзя,\nОбыскал весь стол и стул.\nА он в кармане у меня —\nТихо в шашки я заснул!",
+    "usable": false,
+    "formal_pass": true,
+    "prosody_review_status": "confirmed",
+    "endings": {
+      "2": {
+        "word": "всех",
+        "draft_stress": "всех",
+        "confirmed_stress": "всех"
+      },
+      "4": {
+        "word": "успех",
+        "draft_stress": "успе́х",
+        "confirmed_stress": "успе́х"
+      },
+      "6": {
+        "word": "стул",
+        "draft_stress": "стул",
+        "confirmed_stress": "стул"
+      },
+      "8": {
+        "word": "заснул",
+        "draft_stress": "засну́л",
+        "confirmed_stress": "засну́л"
+      }
+    },
+    "stanza_reviews": [
+      {
+        "rhythm": "awkward",
+        "rhyme": "good",
+        "note": ""
+      },
+      {
+        "rhythm": "awkward",
+        "rhyme": "none",
+        "note": "нет смысла в частушке вообще"
+      }
+    ]
+  },
+  {
+    "id": "deepseek-case-10-a",
+    "topic_id": "case-10",
+    "brief": "про экскаватор, застрявший в песочнице",
+    "split": "holdout",
+    "text": "Экскаватор в песочнице\nВзял ковшом песок с утра.\nДети ахнули: «Проказник!» —\nОн застрял — и вот беда!\n\nПыхтит, гудит, копает ямку,\nА выбраться не может сам.\nПришёл Серёжа с новой лопаткой —\nСпас технику от ям!",
+    "usable": false,
+    "formal_pass": true,
+    "prosody_review_status": "confirmed",
+    "endings": {
+      "2": {
+        "word": "утра",
+        "draft_stress": "утра́",
+        "confirmed_stress": "утра́"
+      },
+      "4": {
+        "word": "беда",
+        "draft_stress": "беда́",
+        "confirmed_stress": "беда́"
+      },
+      "6": {
+        "word": "сам",
+        "draft_stress": "сам",
+        "confirmed_stress": "сам"
+      },
+      "8": {
+        "word": "ям",
+        "draft_stress": "ям",
+        "confirmed_stress": "ям"
+      }
+    },
+    "stanza_reviews": [
+      {
+        "rhythm": "awkward",
+        "rhyme": "none",
+        "note": ""
+      },
+      {
+        "rhythm": "awkward",
+        "rhyme": "weak",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "id": "deepseek-case-10-b",
+    "topic_id": "case-10",
+    "brief": "про экскаватор, застрявший в песочнице",
+    "split": "holdout",
+    "text": "Во дворе экскаватор встал,\nЗастрял в песочнице с утра.\nКовш застрял, мотор устал —\nКричит: «Спасайте, детвора!»\n\nЭкскаватор наш могучий\nВ детской ямке застрял вмиг.\nДети хлопают в ладоши —\nВот так чудо-богатырь!",
+    "usable": false,
+    "formal_pass": true,
+    "prosody_review_status": "confirmed",
+    "endings": {
+      "2": {
+        "word": "утра",
+        "draft_stress": "утра́",
+        "confirmed_stress": "утра́"
+      },
+      "4": {
+        "word": "детвора",
+        "draft_stress": "детвора́",
+        "confirmed_stress": "детвора́"
+      },
+      "6": {
+        "word": "вмиг",
+        "draft_stress": "вмиг",
+        "confirmed_stress": "вмиг"
+      },
+      "8": {
+        "word": "богатырь",
+        "draft_stress": "богаты́рь",
+        "confirmed_stress": "богаты́рь"
+      }
+    },
+    "stanza_reviews": [
+      {
+        "rhythm": "natural",
+        "rhyme": "weak",
+        "note": ""
+      },
+      {
+        "rhythm": "awkward",
+        "rhyme": "none",
+        "note": ""
+      }
+    ]
+  }
+]

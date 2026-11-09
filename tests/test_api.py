@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 import misterio.api as api
 from misterio.api import create_app
 from misterio.contracts import LlmCallSpec
-from misterio.llm import FakeLlm, LlmError
+from misterio.llm import FakeLlm, LlmError, LlmTimeoutError
 from misterio.models import ModelSwitchError
 
 ORIGIN_HEADERS = {"Origin": "http://testserver"}
@@ -18,8 +18,11 @@ MODEL_HEADERS = {
 
 
 class FailingLlm:
+    def __init__(self, error: LlmError) -> None:
+        self.error = error
+
     def complete(self, spec: LlmCallSpec) -> str:
-        raise LlmError("connection failed: secret-internal-url")
+        raise self.error
 
 
 class FakeModelSwitcher:
@@ -155,7 +158,8 @@ def test_form_hides_llm_error_details_and_logs_exception(
     caplog,
     tmp_path: Path,
 ) -> None:
-    client = TestClient(create_app(FailingLlm(), artifacts_dir=tmp_path))
+    llm = FailingLlm(LlmError("connection failed: secret-internal-url"))
+    client = TestClient(create_app(llm, artifacts_dir=tmp_path))
 
     with caplog.at_level(logging.ERROR, logger="misterio.api"):
         response = client.post(
@@ -170,6 +174,23 @@ def test_form_hides_llm_error_details_and_logs_exception(
     assert "LLM generation failed" in caplog.text
     assert "secret-internal-url" in caplog.text
     assert list(tmp_path.glob("*.md")) == []
+
+
+def test_generation_timeout_preserves_form_for_retry(tmp_path: Path) -> None:
+    llm = FailingLlm(LlmTimeoutError())
+    client = TestClient(create_app(llm, artifacts_dir=tmp_path))
+
+    response = client.post(
+        "/",
+        data={"brief": "про трактор", "skill": "chastushki"},
+        headers=ORIGIN_HEADERS,
+    )
+
+    assert response.status_code == 503
+    assert "Истекло время ожидания ответа модели. Попробуйте ещё раз." in response.text
+    assert ">про трактор</textarea>" in response.text
+    assert 'value="chastushki" selected' in response.text
+    assert list(tmp_path.iterdir()) == []
 
 
 def test_generation_reports_missing_cloud_key_as_llm_error(

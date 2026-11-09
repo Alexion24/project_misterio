@@ -5,7 +5,7 @@ from typer.testing import CliRunner
 
 import misterio.cli as cli
 from misterio.cli import app
-from misterio.llm import FakeLlm, LlmError
+from misterio.llm import FakeLlm, LlmError, LlmTimeoutError
 
 runner = CliRunner()
 
@@ -94,11 +94,21 @@ def test_run_unknown_skill_exits_with_error(tmp_path: Path) -> None:
     assert list(tmp_path.glob("*.md")) == []
 
 
+@pytest.mark.parametrize(
+    ("error", "message"),
+    [
+        (LlmError("LLM недоступен"), "LLM недоступен"),
+        (
+            LlmTimeoutError(),
+            "Истекло время ожидания ответа модели. Попробуйте ещё раз.",
+        ),
+    ],
+)
 def test_run_llm_error_exits_with_error(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, error: LlmError, message: str
 ) -> None:
     def boom(*args: object, **kwargs: object) -> None:
-        raise LlmError("LLM недоступен")
+        raise error
 
     monkeypatch.setattr(cli, "run_job", boom)
     result = runner.invoke(
@@ -114,5 +124,5 @@ def test_run_llm_error_exits_with_error(
         ],
     )
     assert result.exit_code == 1
-    assert "LLM недоступен" in result.output
-    assert list(tmp_path.glob("*.md")) == []
+    assert message in result.stderr
+    assert list(tmp_path.iterdir()) == []

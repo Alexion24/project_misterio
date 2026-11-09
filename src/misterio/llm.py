@@ -11,6 +11,13 @@ class LlmError(RuntimeError):
     """Любая ошибка обращения к LLM: сеть, HTTP-статус, неожиданный формат."""
 
 
+class LlmTimeoutError(LlmError):
+    """Истекло время ожидания ответа модели."""
+
+    def __init__(self) -> None:
+        super().__init__("Истекло время ожидания ответа модели. Попробуйте ещё раз.")
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="MISTERIO_",
@@ -102,6 +109,8 @@ class OpenAiCompatibleLlm:
                 if self._ollama_chat_url
                 else data["choices"][0]["message"]["content"]
             )
+        except httpx.TimeoutException as e:
+            raise LlmTimeoutError() from e
         except httpx.HTTPError as e:
             raise LlmError(f"LLM недоступен или вернул ошибку: {e}") from e
         except (KeyError, IndexError, TypeError, ValueError) as e:

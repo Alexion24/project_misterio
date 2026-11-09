@@ -9,7 +9,7 @@ from fastapi.templating import Jinja2Templates
 from misterio.agent import run as run_job
 from misterio.contracts import Job, JobStatus
 from misterio.kb import LocalKb
-from misterio.llm import Llm, LlmError
+from misterio.llm import Llm, LlmError, LlmTimeoutError
 from misterio.models import (
     MODEL_OPTIONS,
     ModelProfileSwitcher,
@@ -127,7 +127,7 @@ def create_app(
             artifact = run_job(
                 job, active_llm, model=active_model, knowledge=knowledge or LocalKb()
             )
-        except LlmError:
+        except LlmError as error:
             logger.exception(
                 "LLM generation failed",
                 extra={"job_id": job.id, "skill_id": skill},
@@ -137,7 +137,13 @@ def create_app(
                 switcher=switcher,
                 brief=brief,
                 selected_skill=skill,
-                error="Не удалось получить ответ от модели. Попробуйте ещё раз позже.",
+                error=(
+                    str(error)
+                    if isinstance(error, LlmTimeoutError)
+                    else (
+                        "Не удалось получить ответ от модели. Попробуйте ещё раз позже."
+                    )
+                ),
                 status_code=503,
             )
         except ValueError:
