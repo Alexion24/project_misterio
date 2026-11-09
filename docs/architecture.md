@@ -13,7 +13,7 @@ flowchart LR
     Agent --> Skills[skills/*]
     Agent -.->|needs_retrieval| KB[LocalKb / SQLite]
     Agent --> LLM[OpenAiCompatibleLlm или FakeLlm]
-    LLM --> Cloud[Ollama Cloud / Mistral / MiMo]
+    LLM --> Cloud[Ollama Cloud / DeepSeek / MiMo]
     LLM --> Ollama[Ollama / Qwen]
     LLM --> Llama[llama.cpp / GigaChat]
     Agent --> Artifact[GenerationArtifact]
@@ -77,7 +77,7 @@ flowchart LR
 точный model ID задаются фиксированным allowlist в `models.py`. Реестр содержит
 четыре профиля:
 
-- `mistral` — Ollama Cloud с `mistral-large-3:675b`, профиль по умолчанию;
+- `deepseek` — Ollama Cloud с `deepseek-v4.1-flash`, профиль по умолчанию;
 - `mimo` — Ollama Cloud с `mimo-v2.6-flash`, ручной экономичный fallback;
 - `qwen` — Ollama на `127.0.0.1:11434` с моделью `qwen3:8b`;
 - `gigachat` — CUDA-образ `llama.cpp` на `127.0.0.1:8080` с
@@ -92,7 +92,7 @@ flowchart LR
 выбранный. `gigachat-pull` сохраняет GGUF в model volume, а GigaChat-сервер
 открывает его по явному локальному пути без сетевой загрузки. Облачные профили
 переключаются только в памяти процесса и не вызывают Docker; после перезапуска
-активен `mistral`. Автоматического fallback нет. UI принимает только ключи из
+активен `deepseek`. Автоматического fallback нет. UI принимает только ключи из
 фиксированного allowlist; переключение защищено same-origin проверкой и
 process-wide lock. API-ключ передаётся только облачным endpoint.
 
@@ -128,10 +128,16 @@ UI и CLI выполняют генерацию синхронно. Очеред
 результатами, диагностикой и временем в `data/evals/`:
 
 ```bash
-MISTERIO_RUN_MODEL_EVALS=1 uv run pytest -m model_eval --model-profile=mistral
+MISTERIO_RUN_MODEL_EVALS=1 uv run pytest -m model_eval --model-profile=deepseek
 MISTERIO_RUN_MODEL_EVALS=1 uv run pytest -m model_eval --model-profile=mimo
-MISTERIO_RUN_MODEL_EVALS=1 MISTERIO_EVAL_CANDIDATE_COUNT=4 uv run pytest -m model_eval --model-profile=mistral
+MISTERIO_RUN_MODEL_EVALS=1 MISTERIO_EVAL_CANDIDATE_COUNT=4 uv run pytest -m model_eval --model-profile=deepseek
+MISTERIO_RUN_NATURALNESS_EVAL=1 uv run pytest tests/test_naturalness_model_eval.py -m model_eval --model-profile=deepseek
 ```
+
+Последняя команда проверяет eval-only модель-судью естественности языка. Она не
+участвует в runtime-выборе кандидатов и отдельно считает точность на
+подтверждённых и предварительных метках. Тот же тестовый модуль содержит
+контрастный few-shot вариант с фиксированными примерами и отдельным holdout.
 
 Для малого пробного прогона число тем можно ограничить через
 `MISTERIO_EVAL_CASE_LIMIT`, а начало непересекающегося блока задать через
@@ -143,6 +149,9 @@ MISTERIO_RUN_MODEL_EVALS=1 MISTERIO_EVAL_CANDIDATE_COUNT=4 uv run pytest -m mode
 получают отдельные имена файлов.
 `MISTERIO_EVAL_FEW_SHOT_COUNT` добавляет только в model-eval указанное
 число проверенных контрастных пар, исключая темы текущей eval-выборки.
+`MISTERIO_EVAL_FEW_SHOT_TOPICS` выбирает пары по значениям `expected_topic`
+через запятую, в указанном порядке. Используйте один из двух параметров.
+В отчёте сохраняются идентификаторы всех использованных пар.
 
 Основные команды: `./mist test` и `./mist lint`.
 

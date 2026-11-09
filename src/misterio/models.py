@@ -26,15 +26,15 @@ class ModelOption:
         )
 
 
-DEFAULT_MODEL_KEY = "mistral"
+DEFAULT_MODEL_KEY = "deepseek"
 
 
 MODEL_OPTIONS = {
-    "mistral": ModelOption(
-        key="mistral",
-        label="Mistral Large 3",
+    "deepseek": ModelOption(
+        key="deepseek",
+        label="DeepSeek V4.1 Flash",
         base_url="https://ollama.com/v1",
-        model="mistral-large-3:675b",
+        model="deepseek-v4.1-flash",
         api_style="ollama",
         start_command=None,
         requires_api_key=True,

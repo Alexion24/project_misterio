@@ -15,24 +15,26 @@ from misterio.models import (
 )
 
 
-def test_default_model_is_mistral() -> None:
-    assert DEFAULT_MODEL_KEY == "mistral"
-    assert MODEL_OPTIONS[DEFAULT_MODEL_KEY].model == "mistral-large-3:675b"
+def test_default_model_is_deepseek() -> None:
+    _, model = create_llm(settings=Settings(llm_api_key="shared-secret"))
+
+    assert DEFAULT_MODEL_KEY == "deepseek"
+    assert model == "deepseek-v4.1-flash"
 
 
 def test_cloud_profiles_share_api_key() -> None:
     settings = Settings(llm_api_key="shared-secret")
 
-    _, mistral_model = create_llm("mistral", settings)
+    _, deepseek_model = create_llm("deepseek", settings)
     _, mimo_model = create_llm("mimo", settings)
 
-    assert mistral_model == "mistral-large-3:675b"
+    assert deepseek_model == "deepseek-v4.1-flash"
     assert mimo_model == "mimo-v2.6-flash"
 
 
 def test_cloud_profile_requires_api_key() -> None:
     with pytest.raises(LlmError, match="MISTERIO_LLM_API_KEY"):
-        create_llm("mistral", Settings(llm_api_key=""))
+        create_llm("deepseek", Settings(llm_api_key=""))
 
 
 def test_local_profile_does_not_require_api_key() -> None:

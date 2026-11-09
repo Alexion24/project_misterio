@@ -18,7 +18,7 @@ cp .env.example .env
 ```
 
 Откройте `http://127.0.0.1:8000`. По умолчанию используется облачный профиль
-Mistral Large 3.
+DeepSeek V4.1 Flash.
 
 ## Основные команды
 
@@ -42,13 +42,13 @@ Mistral Large 3.
 
 Реестр содержит четыре профиля:
 
-- `mistral` — Mistral Large 3 в Ollama Cloud, production-профиль по умолчанию;
+- `deepseek` — DeepSeek V4.1 Flash в Ollama Cloud, профиль по умолчанию;
 - `mimo` — MiMo V2.6 Flash в Ollama Cloud, экономичный ручной fallback;
 - `qwen` — локальный `qwen3:8b` через Ollama;
 - `gigachat` — локальный GigaChat 3.1 Lightning Q4_K_M через `llama.cpp`.
 
 Выбор облачного профиля хранится в памяти процесса и не запускает Docker. После
-перезапуска снова выбирается `mistral`; автоматического fallback между моделями
+перезапуска снова выбирается `deepseek`; автоматического fallback между моделями
 нет. Для локальных профилей переключатель сначала останавливает оба
 LLM-сервиса, затем запускает выбранный, поэтому они не занимают GPU
 одновременно.

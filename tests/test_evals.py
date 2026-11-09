@@ -6,6 +6,7 @@ import pytest
 from misterio.agent import run
 from misterio.contracts import Job, JobStatus
 from misterio.llm import FakeLlm
+from misterio.models import MODEL_OPTIONS
 
 CASES_PATH = Path(__file__).parents[1] / "evals" / "chastushki.json"
 CASES = json.loads(CASES_PATH.read_text(encoding="utf-8"))
@@ -16,6 +17,12 @@ PREFERENCE_CASES_PATH = (
     Path(__file__).parents[1] / "evals" / "chastushki_preference_cases.json"
 )
 PREFERENCE_CASES = json.loads(PREFERENCE_CASES_PATH.read_text(encoding="utf-8"))
+NATURALNESS_PATH = Path(__file__).parents[1] / "evals" / "chastushki_naturalness.json"
+NATURALNESS_CASES = json.loads(NATURALNESS_PATH.read_text(encoding="utf-8"))
+MODEL_CONFIGURATIONS_PATH = (
+    Path(__file__).parents[1] / "evals" / "chastushki_model_configurations.json"
+)
+MODEL_CONFIGURATIONS = json.loads(MODEL_CONFIGURATIONS_PATH.read_text(encoding="utf-8"))
 
 
 def test_chastushki_eval_set_has_varied_topics() -> None:
@@ -48,6 +55,33 @@ def test_preference_cases_do_not_overlap_control_topics() -> None:
     assert preference_briefs.isdisjoint(control_briefs)
     assert preference_topics.isdisjoint(control_topics)
     assert all(case["brief"] and case["expected_topic"] for case in PREFERENCE_CASES)
+
+
+def test_naturalness_seed_has_distinct_confirmed_examples() -> None:
+    labels = [case["natural"] for case in NATURALNESS_CASES]
+
+    assert len(NATURALNESS_CASES) >= 15
+    assert len({case["id"] for case in NATURALNESS_CASES}) == len(NATURALNESS_CASES)
+    assert set(labels) == {True, False}
+    assert all(case["text"] for case in NATURALNESS_CASES)
+    assert all(case["review_status"] == "confirmed" for case in NATURALNESS_CASES)
+
+
+def test_model_configurations_cover_registered_models_and_current_skill() -> None:
+    manifest_path = (
+        Path(__file__).parents[1] / "skills" / "chastushki" / "manifest.json"
+    )
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    expected_parameters = {
+        key: manifest[key]
+        for key in ("temperature", "top_p", "max_tokens", "candidate_count")
+    }
+
+    assert {config["profile"] for config in MODEL_CONFIGURATIONS} == set(MODEL_OPTIONS)
+    for config in MODEL_CONFIGURATIONS:
+        assert config["model"] == MODEL_OPTIONS[config["profile"]].model
+        assert config["parameters"] == expected_parameters
+        assert config["status"] and config["rationale"]
 
 
 def test_rhyme_score_prefers_chosen_preference_examples() -> None:

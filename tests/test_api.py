@@ -48,7 +48,7 @@ def test_form_lists_skills() -> None:
     assert 'aria-label="Генерация результата"' in response.text
     assert "Qwen 3" in response.text
     assert "GigaChat 3.1" in response.text
-    assert "Mistral Large 3" in response.text
+    assert "DeepSeek V4.1 Flash" in response.text
     assert "MiMo V2.6 Flash" in response.text
 
 
@@ -180,7 +180,7 @@ def test_generation_reports_missing_cloud_key_as_llm_error(
 
     monkeypatch.setattr(api, "create_llm", missing_key)
     response = TestClient(
-        create_app(artifacts_dir=tmp_path, model_switcher=FakeModelSwitcher("mistral"))
+        create_app(artifacts_dir=tmp_path, model_switcher=FakeModelSwitcher("deepseek"))
     ).post(
         "/",
         data={"brief": "topic", "skill": "chastushki"},

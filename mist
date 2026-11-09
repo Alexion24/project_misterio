@@ -50,20 +50,20 @@ case "$command_name" in
     exec uv run uvicorn misterio.api:app --reload
     ;;
   run)
-    model="mistral"
+    model_args=()
     if [[ "${1:-}" == "--model" ]]; then
       if [[ $# -lt 3 ]]; then
         echo 'Использование: ./mist run [--model PROFILE] "тема частушки"' >&2
         exit 2
       fi
-      model="$2"
+      model_args=(--model "$2")
       shift 2
     fi
     if [[ $# -eq 0 ]]; then
       echo 'Использование: ./mist run [--model PROFILE] "тема частушки"' >&2
       exit 2
     fi
-    exec uv run misterio run "$*" --skill "${MISTERIO_SKILL:-chastushki}" --model "$model"
+    exec uv run misterio run "$*" --skill "${MISTERIO_SKILL:-chastushki}" "${model_args[@]}"
     ;;
   qwen|giga|gigachat)
     model="$command_name"
@@ -112,7 +112,7 @@ case "$command_name" in
 Misterio — команды проекта
 
   ./mist ui                 запустить локальный интерфейс
-  ./mist run "тема"         запустить навык через Mistral
+  ./mist run "тема"         запустить навык с профилем по умолчанию
   ./mist run --model mimo "тема"  явно выбрать профиль модели
   ./mist qwen               запустить локальный Qwen backend
   ./mist giga               запустить локальный GigaChat backend

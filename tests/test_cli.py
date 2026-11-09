@@ -51,14 +51,20 @@ def test_run_writes_markdown(tmp_path: Path) -> None:
     assert files[0].read_text(encoding="utf-8") == "fake-llm-output"
 
 
+@pytest.mark.parametrize(
+    ("model_args", "expected"), [([], "deepseek"), (["--model", "mimo"], "mimo")]
+)
 def test_run_uses_selected_model_profile(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    model_args: list[str],
+    expected: str,
 ) -> None:
     selected: list[str] = []
 
     def fake_create_llm(profile_key: str) -> tuple[FakeLlm, str]:
         selected.append(profile_key)
-        return FakeLlm(), "mimo-v2.6-flash"
+        return FakeLlm(), profile_key
 
     monkeypatch.setattr(cli, "create_llm", fake_create_llm)
     result = runner.invoke(
@@ -68,15 +74,14 @@ def test_run_uses_selected_model_profile(
             "topic",
             "--skill",
             "chastushki",
-            "--model",
-            "mimo",
+            *model_args,
             "--artifacts-dir",
             str(tmp_path),
         ],
     )
 
     assert result.exit_code == 0, result.output
-    assert selected == ["mimo"]
+    assert selected == [expected]
 
 
 def test_run_unknown_skill_exits_with_error(tmp_path: Path) -> None:

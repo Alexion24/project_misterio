@@ -1,0 +1,50 @@
+[
+  {
+    "profile": "deepseek",
+    "model": "deepseek-v4.1-flash",
+    "status": "selected baseline",
+    "parameters": {
+      "temperature": 0.8,
+      "top_p": 0.8,
+      "max_tokens": 350,
+      "candidate_count": 2
+    },
+    "rationale": "Профиль по умолчанию после снятия Mistral Large 3. В двух слепых сравнениях приняты 7 из 14 текстов DeepSeek и 0 из 14 текстов MiMo."
+  },
+  {
+    "profile": "mimo",
+    "model": "mimo-v2.6-flash",
+    "status": "cloud fallback",
+    "parameters": {
+      "temperature": 0.8,
+      "top_p": 0.8,
+      "max_tokens": 350,
+      "candidate_count": 2
+    },
+    "rationale": "Ручной облачный резерв и baseline для сравнения. В повторном прогоне модель ответила на все десять тем, медиана 2,19 с."
+  },
+  {
+    "profile": "qwen",
+    "model": "qwen3:8b",
+    "status": "local baseline only",
+    "parameters": {
+      "temperature": 0.8,
+      "top_p": 0.8,
+      "max_tokens": 350,
+      "candidate_count": 2
+    },
+    "rationale": "Параметры сохранены для воспроизводимости исходного локального baseline; отдельная оптимизация отложена до стабилизации eval."
+  },
+  {
+    "profile": "gigachat",
+    "model": "ai-sage/GigaChat3.1-10B-A1.8B-GGUF:Q4_K_M",
+    "status": "local baseline only",
+    "parameters": {
+      "temperature": 0.8,
+      "top_p": 0.8,
+      "max_tokens": 350,
+      "candidate_count": 2
+    },
+    "rationale": "Параметры сохранены для воспроизводимости исходного локального baseline; отдельная оптимизация отложена до стабилизации eval."
+  }
+]

@@ -35,21 +35,38 @@ def _exclude_prompt_examples(
     return [case for case in cases if case["brief"] not in example_briefs], excluded
 
 
-def _few_shot_addendum(
-    preferences: list[dict[str, Any]], excluded_topics: set[str], count: int
-) -> str:
+def _select_few_shot_pairs(
+    preferences: list[dict[str, Any]],
+    excluded_topics: set[str],
+    count: int,
+    topics: list[str],
+) -> list[dict[str, Any]]:
     eligible = [
         pair
         for pair in preferences
         if pair["expected_topic"] not in excluded_topics
         and not pair.get("human_review_notes")
-    ][:count]
-    if len(eligible) != count:
+    ]
+    if topics:
+        if count:
+            raise ValueError("set either few-shot count or explicit topics")
+        by_topic = {pair["expected_topic"]: pair for pair in eligible}
+        if len(topics) != len(set(topics)):
+            raise ValueError("few-shot topics must be unique")
+        unavailable = [topic for topic in topics if topic not in by_topic]
+        if unavailable:
+            raise ValueError(f"unavailable few-shot topics: {', '.join(unavailable)}")
+        return [by_topic[topic] for topic in topics]
+    if not 0 <= count <= len(eligible):
         raise ValueError(f"requested {count} few-shot pairs, found {len(eligible)}")
+    return eligible[:count]
+
+
+def _few_shot_addendum(pairs: list[dict[str, Any]]) -> str:
     examples = "\n\n".join(
         f"Плохой вариант:\n{pair['rejected']}\n\n"
         f"Исправленный вариант:\n{pair['chosen']}"
-        for pair in eligible
+        for pair in pairs
     )
     return f"\n\n## Контрастные примеры\n\n{examples}" if examples else ""
 
@@ -122,18 +139,23 @@ def test_real_model_chastushki_report(request: pytest.FixtureRequest) -> None:
         os.getenv("MISTERIO_EVAL_TEMPERATURE", str(manifest.temperature))
     )
     top_p = float(os.getenv("MISTERIO_EVAL_TOP_P", str(manifest.top_p)))
-    few_shot_count = int(os.getenv("MISTERIO_EVAL_FEW_SHOT_COUNT", "0"))
-    prompt_addendum = _few_shot_addendum(
+    raw_topics = os.getenv("MISTERIO_EVAL_FEW_SHOT_TOPICS", "")
+    topics = [topic.strip() for topic in raw_topics.split(",")] if raw_topics else []
+    few_shot_pairs = _select_few_shot_pairs(
         PREFERENCES,
         {case["expected_topic"] for case in cases},
-        few_shot_count,
+        int(os.getenv("MISTERIO_EVAL_FEW_SHOT_COUNT", "0")),
+        topics,
     )
+    prompt_addendum = _few_shot_addendum(few_shot_pairs)
+    few_shot_count = len(few_shot_pairs)
     parameters = {
         "temperature": temperature,
         "top_p": top_p,
         "max_tokens": manifest.max_tokens,
         "candidate_count": candidate_count,
         "few_shot_count": few_shot_count,
+        "few_shot_topics": [pair["expected_topic"] for pair in few_shot_pairs],
     }
     results = []
     started = perf_counter()
@@ -293,10 +315,20 @@ def test_few_shot_addendum_excludes_eval_topics() -> None:
         {"expected_topic": "пёс", "rejected": "bad dog", "chosen": "good dog"},
     ]
 
-    addendum = _few_shot_addendum(preferences, {"кот"}, 1)
+    addendum = _few_shot_addendum(_select_few_shot_pairs(preferences, {"кот"}, 1, []))
 
     assert "good dog" in addendum
     assert "good cat" not in addendum
+
+
+def test_few_shot_pairs_follow_explicit_order() -> None:
+    topics = ["метел", "колодец", "дрон", "будильник"]
+
+    pairs = _select_few_shot_pairs(PREFERENCES, set(), 0, topics)
+
+    assert [pair["expected_topic"] for pair in pairs] == topics
+    with pytest.raises(ValueError, match="unavailable few-shot topics: колодец"):
+        _select_few_shot_pairs(PREFERENCES, {"колодец"}, 0, topics)
 
 
 def test_case_slice_selects_non_overlapping_block() -> None:
